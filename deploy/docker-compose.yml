@@ -1,0 +1,48 @@
+# Backend + automatic HTTPS. Run on any VPS (it can also be a VPN node):
+#   cp .env.example .env && $EDITOR .env && docker compose up -d
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: hidenseek-backend/Dockerfile
+    image: hidenseek-backend:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      GEOIP_DATABASE: /geoip/GeoLite2-City.mmdb
+    volumes:
+      - geoip:/geoip:ro
+    expose:
+      - "8090"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - backend
+
+  # Optional: keeps a free MaxMind GeoLite2 database current, so sessions show country/region/city.
+  # Needs GEOIPUPDATE_ACCOUNT_ID and GEOIPUPDATE_LICENSE_KEY in .env. Start with `--profile geoip`.
+  geoipupdate:
+    image: ghcr.io/maxmind/geoipupdate:v7
+    profiles: ["geoip"]
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      GEOIPUPDATE_EDITION_IDS: GeoLite2-City
+      GEOIPUPDATE_FREQUENCY: "72"
+    volumes:
+      - geoip:/usr/share/GeoIP
+
+volumes:
+  caddy-data:
+  geoip:

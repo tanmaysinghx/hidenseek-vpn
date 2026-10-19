@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The main window only needs core IPC; HTTP, tokens and keys stay in Rust.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

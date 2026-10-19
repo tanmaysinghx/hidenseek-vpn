@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: hidenseek-backend
+  config:
+    # Local secrets live in a git-ignored .env next to the jar (see .env.example).
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    # Prefixed so the VPN schema can share a database with other apps (e.g. Portal SSO).
+    table: hs_flyway_history
+    baseline-on-migrate: true
+    baseline-version: 0
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${PORTAL_URL}
+          audiences: ${PORTAL_CLIENT_ID}
+
+server:
+  port: ${PORT:8090}
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+hidenseek:
+  public-url: ${PUBLIC_URL:http://localhost:8090}
+  portal:
+    url: ${PORTAL_URL}
+    client-id: ${PORTAL_CLIENT_ID}
+    # Set when the VPN's Portal client is confidential. The backend then exchanges and refreshes
+    # tokens for the apps (Portal only issues refresh tokens to confidential clients), so the
+    # secret never ships inside an app. Blank = public client, sign-in lasts one access token.
+    client-secret: ${PORTAL_CLIENT_SECRET:}
+  access:
+    # Emails that are always admins, in addition to Portal users holding ROLE_ADMIN.
+    admin-emails: ${ADMIN_EMAILS:}
+    # false = new users wait for an admin to approve them before they can connect.
+    auto-approve: ${AUTO_APPROVE_USERS:false}
+    max-devices-per-user: ${MAX_DEVICES_PER_USER:5}
+  geoip:
+    # Path to a MaxMind GeoLite2-City.mmdb. Blank disables geolocation.
+    database: ${GEOIP_DATABASE:}
+  sessions:
+    # A peer with no WireGuard handshake for this long is considered disconnected.
+    handshake-timeout: 3m
+  activity:
+    # How long DNS activity records are kept before being purged.
+    retention: ${ACTIVITY_RETENTION:30d}

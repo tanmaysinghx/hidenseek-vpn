@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Hidenseek VPN",
+  "version": "0.1.0",
+  "identifier": "com.hidenseek.vpn",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Hidenseek VPN",
+        "width": 1080,
+        "height": 720,
+        "minWidth": 380,
+        "minHeight": 600,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi", "deb", "rpm", "appimage"],
+    "category": "Utility",
+    "shortDescription": "Self-hosted WireGuard VPN",
+    "longDescription": "Hidenseek VPN connects you to WireGuard servers you or your friends host, with sign-in through Portal SSO.",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "linux": {
+      "deb": { "depends": ["wireguard-tools", "policykit-1"] },
+      "rpm": { "depends": ["wireguard-tools", "polkit"] }
+    },
+    "windows": {
+      "nsis": { "installMode": "perMachine" }
+    }
+  }
+}

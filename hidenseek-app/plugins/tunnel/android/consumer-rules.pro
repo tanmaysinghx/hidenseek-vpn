@@ -1,0 +1,2 @@
+-keep class com.wireguard.android.backend.** { *; }
+-keep class com.hidenseek.tunnel.** { *; }

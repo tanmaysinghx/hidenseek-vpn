@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:hidenseek;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://sso.test
+          audiences: hidenseek-vpn
+
+hidenseek:
+  public-url: https://vpn.test
+  portal:
+    url: https://sso.test
+    client-id: hidenseek-vpn
+    client-secret: test-secret
+  access:
+    admin-emails: admin@test.dev

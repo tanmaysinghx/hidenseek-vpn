@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: gradle
+      - name: Test
+        working-directory: hidenseek-backend
+        run: ./gradlew --no-daemon test
+
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: hidenseek-agent/go.mod
+          cache-dependency-path: hidenseek-agent/go.sum
+      - name: Vet and test
+        working-directory: hidenseek-agent
+        run: make test
+      - name: Shellcheck install script
+        run: shellcheck hidenseek-agent/scripts/install.sh
+
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: hidenseek-app/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            hidenseek-app/core
+            hidenseek-app/src-tauri
+      - name: Install WebKitGTK
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+      - name: Build UI
+        working-directory: hidenseek-app
+        run: npm ci && npm run build
+      - name: Test core
+        working-directory: hidenseek-app/core
+        run: cargo test && cargo clippy --all-targets -- -D warnings
+      - name: Check app
+        working-directory: hidenseek-app/src-tauri
+        run: cargo clippy -- -D warnings
