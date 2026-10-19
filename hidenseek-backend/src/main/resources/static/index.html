@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hidenseek VPN</title>
+  <link rel="icon" type="image/svg+xml" href="/logo.svg">
+  <style>
+    :root { --bg:#0b0f17; --card:#0f1420; --line:rgba(255,255,255,.07); --text:#e6edf6; --muted:#93a1b5; --brand:#34d399; --amber:#fbbf24; --red:#fb7185; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font:16px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+           background-image: radial-gradient(700px 380px at 50% -120px, rgba(16,185,129,.16), transparent), radial-gradient(500px 360px at 100% 100%, rgba(14,165,233,.10), transparent); }
+    main { max-width: 640px; margin: 0 auto; padding: 64px 16px 48px; }
+    header { text-align:center; margin-bottom: 32px; }
+    header img { width:64px; height:64px; filter: drop-shadow(0 10px 30px rgba(16,185,129,.35)); }
+    h1 { margin: 14px 0 4px; font-size: 30px; letter-spacing: -.02em; }
+    .sub { color: var(--muted); margin: 0; }
+    .card { background: rgba(15,20,32,.85); border:1px solid var(--line); border-radius: 18px; padding: 22px; margin-top: 16px; }
+    .status { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .pill { display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,.05); color:var(--muted); }
+    .dot { width:8px; height:8px; border-radius:50%; background:currentColor; }
+    .ok { color: var(--brand); background: rgba(52,211,153,.1); } .ok .dot { box-shadow: 0 0 10px var(--brand); }
+    .bad { color: var(--red); background: rgba(251,113,133,.1); }
+    h2 { font-size: 15px; margin: 0 0 12px; }
+    ol { margin: 0; padding-left: 20px; color: var(--muted); } li { margin: 6px 0; } li b { color: var(--text); }
+    .copy { display:flex; margin-top: 12px; border:1px solid rgba(255,255,255,.1); border-radius:12px; overflow:hidden; background: rgba(0,0,0,.25); }
+    .copy code { flex:1; padding: 11px 14px; font: 14px ui-monospace, "Cascadia Code", Consolas, monospace; color: var(--brand); overflow-x:auto; white-space:nowrap; }
+    .copy button { border:0; border-left:1px solid rgba(255,255,255,.1); background:transparent; color:var(--muted); font-weight:600; padding: 0 14px; cursor:pointer; }
+    .copy button:hover { color: var(--text); background: rgba(255,255,255,.05); }
+    .downloads { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+    .downloads a { display:block; padding: 14px; border-radius: 14px; border:1px solid var(--line); background: rgba(255,255,255,.03); color: var(--text); text-decoration:none; }
+    .downloads a:hover { border-color: rgba(52,211,153,.4); }
+    .downloads small { display:block; color: var(--muted); font-size: 12px; }
+    footer { text-align:center; color: var(--muted); font-size: 13px; margin-top: 28px; }
+    footer a { color: var(--muted); }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="/logo.svg" alt="">
+    <h1>Hidenseek VPN</h1>
+    <p class="sub">Private WireGuard tunnels on servers you trust.</p>
+  </header>
+
+  <section class="card status">
+    <div>
+      <div style="font-weight:600">Server status</div>
+      <div class="sub" style="font-size:14px" id="host"></div>
+    </div>
+    <span class="pill" id="status"><span class="dot"></span>Checking…</span>
+  </section>
+
+  <section class="card">
+    <h2>Get connected</h2>
+    <ol>
+      <li><b>Install the app</b> for your device (below).</li>
+      <li>Enter this <b>server address</b> when the app asks:</li>
+    </ol>
+    <div class="copy"><code id="address"></code><button id="copy" type="button">Copy</button></div>
+    <ol start="3" style="margin-top:12px">
+      <li><b>Sign in</b> with your Portal account, or create one.</li>
+      <li>Wait for an admin to <b>approve</b> you, then tap connect.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>Download</h2>
+    <div class="downloads">
+      <a href="https://github.com/tanmaysinghx/hidenseek-vpn/releases/latest">Windows 11<small>Installer · needs WireGuard</small></a>
+      <a href="https://github.com/tanmaysinghx/hidenseek-vpn/releases/latest">Linux<small>.deb · .rpm · AppImage</small></a>
+      <a href="https://github.com/tanmaysinghx/hidenseek-vpn/releases/latest">Android<small>APK</small></a>
+    </div>
+  </section>
+
+  <footer>Open source · <a href="https://github.com/tanmaysinghx/hidenseek-vpn">github.com/tanmaysinghx/hidenseek-vpn</a></footer>
+</main>
+<script>
+  const host = location.host;
+  document.getElementById("host").textContent = host;
+  document.getElementById("address").textContent = host;
+  document.getElementById("copy").addEventListener("click", async (e) => {
+    try { await navigator.clipboard.writeText(host); e.target.textContent = "Copied"; setTimeout(() => e.target.textContent = "Copy", 1500); } catch {}
+  });
+  const pill = document.getElementById("status");
+  fetch("/actuator/health", { cache: "no-store" })
+    .then(r => r.json())
+    .then(h => { const up = h.status === "UP"; pill.className = "pill " + (up ? "ok" : "bad"); pill.lastChild.textContent = up ? "Online" : "Degraded"; })
+    .catch(() => { pill.className = "pill bad"; pill.lastChild.textContent = "Unreachable"; });
+</script>
+</body>
+</html>

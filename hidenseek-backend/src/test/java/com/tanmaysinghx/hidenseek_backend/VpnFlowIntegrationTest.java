@@ -154,6 +154,13 @@ class VpnFlowIntegrationTest {
         mvc.perform(get("/api/v1/me")).andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void landingPageIsPublic() throws Exception {
+        mvc.perform(get("/index.html")).andExpect(status().isOk());
+        mvc.perform(get("/")).andExpect(status().isOk());
+        mvc.perform(get("/actuator/health")).andExpect(status().isOk());
+    }
+
     private void report(String bearer, String publicKey, Instant handshake, long rx, long tx, String extra)
             throws Exception {
         mvc.perform(post("/agent/v1/report").header("Authorization", bearer)
