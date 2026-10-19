@@ -372,10 +372,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
-
-      - name: Install NDK
-        run: sdkmanager --install "ndk;27.2.12479018"
+      # The runner image ships the Android SDK at $ANDROID_HOME. android-actions/setup-android is
+      # avoided: it installs the removed `tools` package by default and fails.
+      - name: Accept SDK licenses and install NDK
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --install "ndk;27.2.12479018" "platform-tools" > /dev/null
+          ls "$ANDROID_HOME/ndk"
 
       - uses: dtolnay/rust-toolchain@stable
         with:
