@@ -23,6 +23,15 @@ public interface VpnSessionRepository extends JpaRepository<VpnSession, String> 
 
     List<VpnSession> findByEndedAtIsNullAndLastSeenAtBefore(Instant cutoff);
 
+    /** Sessions that were active at any point after {@code since}. */
+    @Query("select s from VpnSession s where s.endedAt is null or s.endedAt > :since")
+    List<VpnSession> findActiveSince(Instant since);
+
+    @Query("select s from VpnSession s where s.userId = :userId and (s.endedAt is null or s.endedAt > :since)")
+    List<VpnSession> findActiveSinceForUser(String userId, Instant since);
+
+    List<VpnSession> findByEndedAtIsNullOrderByStartedAtDesc();
+
     long countByNodeIdAndEndedAtIsNull(String nodeId);
 
     long countByEndedAtIsNull();

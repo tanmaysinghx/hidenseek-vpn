@@ -51,6 +51,18 @@ jobs:
           distribution: temurin
           cache: gradle
 
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: hidenseek-console/package-lock.json
+
+      # The admin console (Angular) is served by the backend at /console, so it's bundled in the jar.
+      - name: Build the console
+        working-directory: hidenseek-console
+        run: npm ci && npm run build:backend
+
       # Tests run on an in-memory H2 database in MySQL mode; they never touch a real database.
       - name: Build and test
         working-directory: hidenseek-backend
@@ -263,6 +275,7 @@ jobs:
           config=$(curl -fsS http://localhost:8090/api/v1/public/config)
           echo "Public config: $config"
           curl -fsS http://localhost:8090/ | grep -q "Hidenseek VPN" || { echo "::error::Landing page not served."; exit 1; }
+          curl -fsS http://localhost:8090/console/users | grep -q "<app-root>" || { echo "::error::Admin console not served."; exit 1; }
           curl -fsS http://localhost:8090/install.sh | head -1 | grep -q bash || { echo "::error::install.sh not served."; exit 1; }
           [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8090/api/v1/me)" = "401" ] \
             || { echo "::error::/api/v1/me must require a token."; exit 1; }
@@ -278,7 +291,7 @@ jobs:
             echo "| Image size | $size |"
             echo "| Healthy after | ${boot_seconds}s |"
             echo "| Flyway on MySQL 8.4 | migrated |"
-            echo "| Landing page · install.sh · auth | ok |"
+            echo "| Landing page · console · install.sh · auth | ok |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Container logs on failure

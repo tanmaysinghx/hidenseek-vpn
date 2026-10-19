@@ -1,0 +1,36 @@
+{
+  "name": "hidenseek-console",
+  "version": "0.0.0",
+  "scripts": {
+    "start": "ng serve",
+    "build": "ng build",
+    "build:backend": "ng build && node scripts/copy-to-backend.mjs",
+    "watch": "ng build --watch --configuration development",
+    "ng": "ng",
+    "mock": "node scripts/mock-api.mjs"
+  },
+  "private": true,
+  "packageManager": "npm@12.2.1",
+  "dependencies": {
+    "@angular/common": "^21.2.0",
+    "@angular/compiler": "^21.2.0",
+    "@angular/core": "^21.2.0",
+    "@angular/forms": "^21.2.0",
+    "@angular/platform-browser": "^21.2.0",
+    "@angular/router": "^21.2.0",
+    "echarts": "^6.1.0",
+    "flag-icons": "^7.6.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.2.27",
+    "@angular/cli": "^21.2.27",
+    "@angular/compiler-cli": "^21.2.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "postcss": "^8.5.31",
+    "prettier": "^3.8.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.9.2"
+  }
+}

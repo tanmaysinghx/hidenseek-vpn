@@ -5,3 +5,5 @@
 **/build
 **/.gradle
 hidenseek-app/dist
+hidenseek-console/dist
+hidenseek-console/.angular

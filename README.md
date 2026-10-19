@@ -18,6 +18,7 @@
 - **Many locations.** Every VPS you add is a selectable location. Each device gets its own address on each server.
 - **Portal SSO sign-in.** Login and registration are handled by Portal. New users wait for admin approval (configurable).
 - **Session history.** For every connection it stores the user's email, client IP, country, region, city, elapsed time, and bytes up and down.
+- **Admin console** at `/console`: live connections, data per day, top websites, per-user history, approvals and servers, signed in with Portal.
 - **Optional activity log.** Per server, off by default: records the domains each user looks up. Users are told before they connect. See [Privacy](#privacy).
 - **Install and play apps** for Windows, Linux (.deb, .rpm, Arch, AppImage) and Android, from one Tauri + React + Tailwind codebase. Nothing else to install: Linux uses the kernel's WireGuard directly, Windows bundles the WireGuard engine. The private key is generated on the device and never leaves it.
 
@@ -42,6 +43,7 @@
 | [`hidenseek-backend/`](hidenseek-backend) | Control plane API: users, servers, devices, sessions, activity | Java 25, Spring Boot 4, MySQL, Flyway |
 | [`hidenseek-agent/`](hidenseek-agent) | Runs on each VPS: WireGuard interface, NAT, DNS resolver, stats | Go, wgctrl, miekg/dns |
 | [`hidenseek-app/`](hidenseek-app) | Client apps for Windows, Linux and Android | Tauri 2, React 19, Tailwind 4, Rust |
+| [`hidenseek-console/`](hidenseek-console) | Web admin console at `/console`: dashboard, users, sessions, websites, servers | Angular 21, Tailwind 4, ECharts |
 | [`deploy/`](deploy) | Docker Compose with automatic HTTPS (Caddy) | |
 | [`docs/`](docs) | [Self-hosting guide](docs/self-hosting.md) · [Architecture & API](docs/architecture.md) | |
 
@@ -82,6 +84,9 @@ What the operator of a Hidenseek server can see:
 ```bash
 # Backend: needs Java 25. Tests use an in-memory H2 and never touch your database.
 cd hidenseek-backend && cp .env.example .env && ./gradlew test bootRun
+
+# Console: needs Node 24. `npm run mock` serves fake data, so no Portal or database is needed.
+cd hidenseek-console && npm install && npm run mock & npm start     # http://localhost:4300/console/
 
 # Agent: needs Go. Running it needs root on Linux.
 cd hidenseek-agent && make test build

@@ -39,3 +39,6 @@ out/
 ### Secrets ###
 .env
 *.mmdb
+
+### Angular console build output (copied in by the build) ###
+src/main/resources/static/console/

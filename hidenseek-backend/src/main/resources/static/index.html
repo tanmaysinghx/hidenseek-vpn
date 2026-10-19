@@ -159,7 +159,7 @@
     }
     .brand { white-space: nowrap; }
     @media (max-width: 640px) {
-      .links a:not(.btn-primary) { display: none; }
+      .links a:not(.btn-primary):not([href="/console/"]) { display: none; }
       .chip.c1 { display: none; }
       .chip.c2 { bottom: -18px; right: 12px; }
       section { padding: 64px 0; }
@@ -199,6 +199,7 @@
       <a href="#how">How it works</a>
       <a href="#privacy">Privacy</a>
       <a class="btn btn-ghost btn-sm" href="https://github.com/tanmaysinghx/hidenseek-vpn" rel="noopener"><svg><use href="#i-github"/></svg>GitHub</a>
+      <a class="btn btn-ghost btn-sm" href="/console/">Sign in</a>
       <a class="btn btn-primary btn-sm" href="#download">Download</a>
     </div>
   </div>

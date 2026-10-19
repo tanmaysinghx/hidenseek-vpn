@@ -141,7 +141,37 @@ class VpnFlowIntegrationTest {
                 .andExpect(jsonPath("$.total").value(1))
                 .andExpect(jsonPath("$.items[0].clientIp").value("203.0.113.9"));
         mvc.perform(get("/api/v1/admin/activity").with(admin))
-                .andExpect(jsonPath("$.items[0].domain").value("example.com"));
+                .andExpect(jsonPath("$.items[0].domain").value("example.com"))
+                .andExpect(jsonPath("$.items[0].userEmail").value("friend@test.dev"));
+        mvc.perform(get("/api/v1/admin/activity?q=exam").with(admin)).andExpect(jsonPath("$.total").value(1));
+        mvc.perform(get("/api/v1/admin/activity?q=nothing-like-this").with(admin)).andExpect(jsonPath("$.total").value(0));
+
+        // Admin insights: the dashboard, one user's page and the website ranking.
+        mvc.perform(get("/api/v1/admin/insights/dashboard?days=7").with(admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.days").value(7))
+                .andExpect(jsonPath("$.daily.length()").value(7))
+                .andExpect(jsonPath("$.daily[6].sessions").value(1))
+                .andExpect(jsonPath("$.daily[6].downloadBytes").value(9000))
+                .andExpect(jsonPath("$.daily[6].uploadBytes").value(3000))
+                .andExpect(jsonPath("$.topDomains[0].domain").value("example.com"))
+                .andExpect(jsonPath("$.topDomains[0].lookups").value(1))
+                .andExpect(jsonPath("$.topUsers[0].email").value("friend@test.dev"))
+                .andExpect(jsonPath("$.topUsers[0].downloadBytes").value(9000))
+                .andExpect(jsonPath("$.recentActivity[0].userEmail").value("friend@test.dev"))
+                .andExpect(jsonPath("$.live.length()").value(0))
+                .andExpect(jsonPath("$.activityLookups").value(1));
+        mvc.perform(get("/api/v1/admin/insights/users/{id}?days=30", userId).with(admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.email").value("friend@test.dev"))
+                .andExpect(jsonPath("$.sessions").value(1))
+                .andExpect(jsonPath("$.devices[0].name").value("Laptop"))
+                .andExpect(jsonPath("$.topDomains[0].domain").value("example.com"))
+                .andExpect(jsonPath("$.recentSessions[0].clientIp").value("203.0.113.9"));
+        mvc.perform(get("/api/v1/admin/insights/websites?days=7&userId=" + userId).with(admin))
+                .andExpect(jsonPath("$[0].domain").value("example.com"))
+                .andExpect(jsonPath("$[0].users").value(1));
+        mvc.perform(get("/api/v1/admin/insights/dashboard").with(friend)).andExpect(status().isForbidden());
     }
 
     @Test
