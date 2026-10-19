@@ -10,6 +10,9 @@ url="https://github.com/tanmaysinghx/hidenseek-vpn"
 license=('MIT')
 # The kernel's built-in WireGuard is used directly: no wireguard-tools needed.
 depends=('webkit2gtk-4.1' 'gtk3' 'polkit' 'iproute2')
+# Tauri already ships a stripped release binary; without '!debug' recent makepkg also emits an
+# empty hidenseek-vpn-debug package.
+options=('!debug' '!strip')
 source=("hidenseek-vpn-linux-amd64.deb")
 sha256sums=('SKIP')
 
