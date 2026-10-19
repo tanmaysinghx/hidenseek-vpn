@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.hidenseek.tunnel"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24
@@ -23,6 +23,8 @@ android {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
+    // ActivityResult, for the system "allow VPN connection" dialog.
+    implementation("androidx.activity:activity-ktx:1.9.3")
     // Official WireGuard userspace backend; declares the GoBackend VpnService in its manifest.
     implementation("com.wireguard.android:tunnel:1.0.20230706")
     implementation(project(":tauri-android"))
