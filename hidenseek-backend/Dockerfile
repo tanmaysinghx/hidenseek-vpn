@@ -1,5 +1,6 @@
 # Build from the repository root (the jar bundles hidenseek-agent/scripts/install.sh):
 #   docker build -f hidenseek-backend/Dockerfile -t hidenseek-backend .
+#   docker build -f hidenseek-backend/Dockerfile --target test .   # runs the test suite
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /src
 COPY hidenseek-agent/scripts/install.sh hidenseek-agent/scripts/install.sh
@@ -8,6 +9,10 @@ COPY hidenseek-backend/gradle hidenseek-backend/gradle
 RUN cd hidenseek-backend && ./gradlew --no-daemon -q dependencies > /dev/null
 COPY hidenseek-backend/src hidenseek-backend/src
 RUN cd hidenseek-backend && ./gradlew --no-daemon -q bootJar -x test
+
+# Optional gate, built only on request: docker build --target test ...
+FROM build AS test
+RUN cd hidenseek-backend && ./gradlew --no-daemon test
 
 FROM eclipse-temurin:25-jre
 RUN useradd --system --uid 10001 hidenseek
