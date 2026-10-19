@@ -1,0 +1,19 @@
+# Arch Linux / CachyOS / Manjaro package, built in CI by repackaging the .deb produced by Tauri.
+#   HIDENSEEK_VERSION=0.1.42 makepkg -f   (with hidenseek-vpn-linux-amd64.deb next to this file)
+# Install with: sudo pacman -U hidenseek-vpn-linux-x86_64.pkg.tar.zst
+pkgname=hidenseek-vpn
+pkgver=${HIDENSEEK_VERSION:-0.1.0}
+pkgrel=1
+pkgdesc="Private WireGuard VPN client for Hidenseek servers"
+arch=('x86_64')
+url="https://github.com/tanmaysinghx/hidenseek-vpn"
+license=('MIT')
+# The kernel's built-in WireGuard is used directly: no wireguard-tools needed.
+depends=('webkit2gtk-4.1' 'gtk3' 'polkit' 'iproute2')
+source=("hidenseek-vpn-linux-amd64.deb")
+sha256sums=('SKIP')
+
+package() {
+  bsdtar -xf data.tar.* -C "$pkgdir"
+  chmod 755 "$pkgdir/usr/bin/hidenseek-app"
+}

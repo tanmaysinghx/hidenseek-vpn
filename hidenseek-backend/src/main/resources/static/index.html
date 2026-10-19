@@ -266,8 +266,8 @@
       <p class="sec-lead">Three steps, once. After that it's a single tap.</p>
     </div>
     <div class="grid3 steps">
-      <div class="card step reveal"><h3>Install the app</h3><p>Grab the version for your device below. Windows and Linux use the official WireGuard engine; Android has it built in.</p></div>
-      <div class="card step reveal"><h3>Sign in</h3><p>Enter <span class="inline" data-host>this server</span> and sign in with your Portal account, or create one. An admin approves new accounts.</p></div>
+      <div class="card step reveal"><h3>Install the app</h3><p>Grab the version for your device below. Nothing else to set up: the WireGuard engine comes with it.</p></div>
+      <div class="card step reveal"><h3>Sign in</h3><p>Sign in with your Portal account, or create one. An admin approves new accounts.</p></div>
       <div class="card step reveal"><h3>Tap connect</h3><p>Choose a location and hit the power button. Your connection is encrypted from your device to the server.</p></div>
     </div>
   </div>
@@ -286,7 +286,7 @@
         <span class="badge">Your device</span>
         <div class="osicon"><svg style="color:#60a5fa"><use href="#i-windows"/></svg></div>
         <h3>Windows</h3>
-        <p class="req">Windows 10 or 11, 64-bit · needs <a href="https://www.wireguard.com/install/" rel="noopener">WireGuard</a></p>
+        <p class="req">Windows 10 or 11, 64-bit · nothing else to install</p>
         <div class="actions">
           <a class="btn btn-primary" data-asset="hidenseek-vpn-windows-x64-setup.exe"><svg><use href="#i-down"/></svg>Download installer<span class="size"></span></a>
           <div class="alts"><a data-asset="hidenseek-vpn-windows-x64.msi">MSI package</a></div>
@@ -296,10 +296,10 @@
         <span class="badge">Your device</span>
         <div class="osicon"><svg style="color:#fbbf24"><use href="#i-linux"/></svg></div>
         <h3>Linux</h3>
-        <p class="req">Ubuntu, Debian, Fedora, Arch… · needs <span class="inline">wireguard-tools</span></p>
+        <p class="req">Ubuntu, Debian, Fedora, Arch… · nothing else to install</p>
         <div class="actions">
           <a class="btn btn-primary" data-asset="hidenseek-vpn-linux-amd64.deb"><svg><use href="#i-down"/></svg>Download .deb<span class="size"></span></a>
-          <div class="alts"><a data-asset="hidenseek-vpn-linux-x86_64.rpm">.rpm (Fedora)</a><a data-asset="hidenseek-vpn-linux-x86_64.AppImage">AppImage (any distro)</a></div>
+          <div class="alts"><a data-asset="hidenseek-vpn-linux-x86_64.rpm">.rpm (Fedora)</a><a data-asset="hidenseek-vpn-linux-x86_64.pkg.tar.zst">Arch / CachyOS</a><a data-asset="hidenseek-vpn-linux-x86_64.AppImage">AppImage (any distro)</a></div>
         </div>
       </div>
       <div class="card os reveal" data-os="android">
@@ -324,28 +324,29 @@
       </div>
       <div class="panel active" data-panel="windows">
         <ol>
-          <li><span>Install <b>WireGuard for Windows</b> from <a href="https://www.wireguard.com/install/" rel="noopener">wireguard.com/install</a>. Hidenseek uses its tunnel engine.</span></li>
           <li><span>Run <b>hidenseek-vpn-windows-x64-setup.exe</b>. If SmartScreen says "Windows protected your PC", click <b>More info → Run anyway</b> (the app isn't code-signed yet).</span></li>
-          <li><span>Open Hidenseek VPN and accept the administrator prompt; it needs this to manage the tunnel.</span></li>
-          <li><span>Enter <span class="inline" data-host></span>, sign in, and tap the power button.</span></li>
+          <li><span>Open Hidenseek VPN from the Start menu and accept the administrator prompt; it needs this to manage the tunnel.</span></li>
+          <li><span><b>Sign in</b> with your Portal account and tap the power button. The first connect sets up the WireGuard engine automatically.</span></li>
         </ol>
       </div>
       <div class="panel" data-panel="linux">
         <ol>
-          <li><span><b>Ubuntu / Debian:</b> install the package; it pulls in WireGuard automatically.
+          <li><span><b>Ubuntu / Debian:</b> double-click the .deb to install it in Software, or:
             <div class="term"><code>sudo apt install ./hidenseek-vpn-linux-amd64.deb</code><button data-copy>Copy</button></div></span></li>
           <li><span><b>Fedora:</b>
             <div class="term"><code>sudo dnf install ./hidenseek-vpn-linux-x86_64.rpm</code><button data-copy>Copy</button></div></span></li>
-          <li><span><b>Any other distro:</b> install <span class="inline">wireguard-tools</span>, then run the AppImage.
+          <li><span><b>Arch / CachyOS / Manjaro:</b>
+            <div class="term"><code>sudo pacman -U hidenseek-vpn-linux-x86_64.pkg.tar.zst</code><button data-copy>Copy</button></div></span></li>
+          <li><span>Open <b>Hidenseek VPN</b> from your app menu, sign in and tap connect. That's it: WireGuard is built into Linux, and no password is asked when you connect.</span></li>
+          <li><span><b>Other distros:</b> the AppImage runs anywhere without installing (it asks for your password when connecting).
             <div class="term"><code>chmod +x hidenseek-vpn-linux-x86_64.AppImage && ./hidenseek-vpn-linux-x86_64.AppImage</code><button data-copy>Copy</button></div></span></li>
-          <li><span>Open Hidenseek VPN, enter <span class="inline" data-host></span>, sign in and connect. You'll approve a system password prompt when the tunnel starts.</span></li>
         </ol>
       </div>
       <div class="panel" data-panel="android">
         <ol>
           <li><span>Download <b>hidenseek-vpn-android.apk</b> on your phone.</span></li>
           <li><span>Open it. If Android asks, allow your browser to <b>install unknown apps</b>, then tap <b>Install</b>.</span></li>
-          <li><span>Open Hidenseek VPN, enter <span class="inline" data-host></span> and sign in.</span></li>
+          <li><span>Open Hidenseek VPN and sign in with your Portal account.</span></li>
           <li><span>Tap connect and accept Android's <b>VPN connection request</b> (only the first time).</span></li>
         </ol>
       </div>

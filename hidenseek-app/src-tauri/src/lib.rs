@@ -22,6 +22,10 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_hidenseek_tunnel::init())
         .setup(|app| {
+            #[cfg(target_os = "windows")]
+            if let Ok(resources) = app.path().resource_dir() {
+                hidenseek_core::tunnel::set_bundled_installer(resources.join("wireguard-amd64.msi"));
+            }
             let dir = app.path().app_data_dir()?;
             let store = Arc::new(Store::open(dir)?);
             app.manage(AppState { api: Api::new(store.clone()), store, connection: Default::default() });

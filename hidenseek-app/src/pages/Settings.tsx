@@ -1,12 +1,14 @@
 import { LogOut, Server, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { Badge, Button, PageHeader } from "../components/ui";
-import { useAction } from "../lib/hooks";
+import { getVersion } from "@tauri-apps/api/app";
+import { useAction, useResource } from "../lib/hooks";
 import { ipc } from "../lib/ipc";
 import type { AppView, User } from "../lib/types";
 
 export function SettingsPage({ app, me, onSignedOut, onChangeServer }: { app: AppView; me: User; onSignedOut: () => void; onChangeServer: () => void }) {
   const action = useAction();
+  const version = useResource(() => getVersion());
   const signOut = async () => {
     await action.run(() => ipc.signOut());
     onSignedOut();
@@ -34,7 +36,7 @@ export function SettingsPage({ app, me, onSignedOut, onChangeServer }: { app: Ap
           </div>
         </Section>
         <p className="px-1 text-xs text-ink-400">
-          Hidenseek VPN 0.1.0 · open source ·{" "}
+          Hidenseek VPN {version.data ?? ""} · open source ·{" "}
           <span className="text-ink-300">github.com/tanmaysinghx/hidenseek-vpn</span>
         </p>
       </div>

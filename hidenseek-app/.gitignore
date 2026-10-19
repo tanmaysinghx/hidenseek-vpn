@@ -6,3 +6,5 @@ plugins/tunnel/android/.tauri/
 *.log
 **/.gradle/
 **/build/
+src-tauri/windows/*.msi
+*.tsbuildinfo

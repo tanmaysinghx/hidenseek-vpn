@@ -103,11 +103,13 @@ To remove a server, delete it in the console, then run `systemctl disable --now 
 
 ### Client requirements
 
-| Platform | Needs |
+None: install the app and sign in.
+
+| Platform | How the tunnel works |
 |---|---|
-| Windows 11 | [WireGuard for Windows](https://www.wireguard.com/install/). The app runs as administrator to manage the tunnel service. |
-| Linux | `wireguard-tools` and polkit (the `.deb` and `.rpm` packages depend on them). You approve a polkit prompt on connect. |
-| Android | Nothing. The tunnel is built in. Android asks once for VPN permission. |
+| Windows 10/11 | The installer bundles WireGuard's signed engine and the app installs it silently on first connect. The app runs as administrator to manage the tunnel service. |
+| Linux | The app drives the kernel's built-in WireGuard (Linux 5.6+) itself; no `wireguard-tools`. The .deb, .rpm and Arch packages add a polkit rule so the person at the computer connects without a password. The AppImage asks for it on connect. |
+| Android | Built in. Android asks once for VPN permission. |
 
 ## Troubleshooting
 

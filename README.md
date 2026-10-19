@@ -19,7 +19,7 @@
 - **Portal SSO sign-in.** Login and registration are handled by Portal. New users wait for admin approval (configurable).
 - **Session history.** For every connection it stores the user's email, client IP, country, region, city, elapsed time, and bytes up and down.
 - **Optional activity log.** Per server, off by default: records the domains each user looks up. Users are told before they connect. See [Privacy](#privacy).
-- **Apps** for Windows 11, Linux and Android from one Tauri + React + Tailwind codebase. The private key is generated on the device and never leaves it.
+- **Install and play apps** for Windows, Linux (.deb, .rpm, Arch, AppImage) and Android, from one Tauri + React + Tailwind codebase. Nothing else to install: Linux uses the kernel's WireGuard directly, Windows bundles the WireGuard engine. The private key is generated on the device and never leaves it.
 
 ## How it fits together
 
@@ -86,7 +86,7 @@ cd hidenseek-backend && cp .env.example .env && ./gradlew test bootRun
 # Agent: needs Go. Running it needs root on Linux.
 cd hidenseek-agent && make test build
 
-# Apps: needs Node 24 and Rust. On Linux also install webkit2gtk-4.1 and wireguard-tools.
+# Apps: needs Node 24 and Rust. On Linux also install webkit2gtk-4.1.
 cd hidenseek-app && npm install && npm run tauri dev
 cd hidenseek-app/core && cargo test        # platform-independent client logic
 ```

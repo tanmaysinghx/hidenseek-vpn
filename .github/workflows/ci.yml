@@ -319,6 +319,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 rpm
 
+      # Bundled so users never install WireGuard themselves: the app installs it silently on first
+      # connect if it's missing. The signature is checked, so a tampered download fails the build.
+      - name: Bundle the WireGuard engine (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $dir = "hidenseek-app/src-tauri/windows"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $msi = "$dir/wireguard-amd64.msi"
+          Invoke-WebRequest -Uri "https://download.wireguard.com/windows-client/wireguard-amd64-$env:WIREGUARD_VERSION.msi" -OutFile $msi
+          $sig = Get-AuthenticodeSignature $msi
+          Write-Host "Signature: $($sig.Status) by $($sig.SignerCertificate.Subject)"
+          if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notmatch 'WireGuard LLC') {
+            throw "wireguard-amd64.msi is not validly signed by WireGuard LLC"
+          }
+        env:
+          WIREGUARD_VERSION: '1.1.1'
+
       - name: Build installers
         working-directory: hidenseek-app
         shell: bash
@@ -338,6 +356,13 @@ jobs:
             cp $b/deb/*.deb           out/hidenseek-vpn-linux-amd64.deb
             cp $b/rpm/*.rpm           out/hidenseek-vpn-linux-x86_64.rpm
             cp $b/appimage/*.AppImage out/hidenseek-vpn-linux-x86_64.AppImage
+            # Arch / CachyOS / Manjaro: repackage the .deb with makepkg in an Arch container.
+            mkdir -p arch && cp hidenseek-app/packaging/arch/PKGBUILD out/hidenseek-vpn-linux-amd64.deb arch/
+            docker run --rm -v "$PWD/arch:/build" -e HIDENSEEK_VERSION="$APP_VERSION" archlinux:latest bash -euc '
+              pacman -Sy --noconfirm --needed base-devel > /dev/null
+              useradd -m builder && chown -R builder /build
+              su builder -c "cd /build && HIDENSEEK_VERSION=$HIDENSEEK_VERSION makepkg -f --nodeps"'
+            cp arch/hidenseek-vpn-*.pkg.tar.zst out/hidenseek-vpn-linux-x86_64.pkg.tar.zst
           fi
           ls -l out
           {
@@ -536,11 +561,16 @@ jobs:
             Install the app, then enter your server address (for example `vpn.tanmaysinghx.com`) and sign in with Portal.
 
             ### Apps
-            | Platform | Download | Notes |
+            Nothing else to install: the WireGuard engine is built in on Linux and Android and bundled on Windows.
+
+            | Platform | Download | Install |
             |---|---|---|
-            | Windows 11 | **[Installer (.exe)](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-windows-x64-setup.exe)** · [MSI](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-windows-x64.msi) | Needs [WireGuard for Windows](https://www.wireguard.com/install/) |
-            | Linux | **[.deb](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-linux-amd64.deb)** · [.rpm](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-linux-x86_64.rpm) · [AppImage](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-linux-x86_64.AppImage) | Needs `wireguard-tools` |
-            | Android 7+ | **[APK](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-android.apk)** | Allow installs from your browser |
+            | Windows 10/11 | **[Installer (.exe)](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-windows-x64-setup.exe)** · [MSI](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-windows-x64.msi) | Run it |
+            | Ubuntu / Debian | **[.deb](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-linux-amd64.deb)** | Open it, or `sudo apt install ./hidenseek-vpn-linux-amd64.deb` |
+            | Fedora | **[.rpm](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-linux-x86_64.rpm)** | Open it, or `sudo dnf install ./hidenseek-vpn-linux-x86_64.rpm` |
+            | Arch / CachyOS / Manjaro | **[.pkg.tar.zst](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-linux-x86_64.pkg.tar.zst)** | `sudo pacman -U hidenseek-vpn-linux-x86_64.pkg.tar.zst` |
+            | Any Linux | [AppImage](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-linux-x86_64.AppImage) | `chmod +x`, then open (asks for your password on connect) |
+            | Android 7+ | **[APK](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-android.apk)** | Open it and allow installs from your browser |
 
             ### Server
             - `hidenseek-backend.jar`: control plane (Java 25), or deploy with `deploy/docker-compose.yml`

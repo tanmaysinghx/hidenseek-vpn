@@ -1,17 +1,17 @@
-//! Desktop tunnel control using the system WireGuard install. Android uses the VpnService plugin
-//! in `plugins/tunnel` instead.
+//! Desktop tunnel control: the kernel's WireGuard driven directly on Linux, the official WireGuard
+//! tunnel service on Windows. Android uses the VpnService plugin in `plugins/tunnel` instead.
 
 use serde::Serialize;
 
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
-pub use linux::{down, stats, up};
+pub use linux::{down, helper_main, stats, up, HELPER_ARG};
 
 #[cfg(target_os = "windows")]
 mod windows;
 #[cfg(target_os = "windows")]
-pub use windows::{down, stats, up};
+pub use windows::{down, set_bundled_installer, stats, up};
 
 #[cfg(not(any(target_os = "linux", target_os = "windows")))]
 mod unsupported;

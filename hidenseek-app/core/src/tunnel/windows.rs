@@ -1,8 +1,12 @@
 //! Windows: the official WireGuard for Windows tunnel service. The app is built with a
 //! requireAdministrator manifest, so installing the service needs no extra prompt. The service
 //! enables WireGuard's built-in kill switch for full-tunnel configs.
+//!
+//! The installer bundles WireGuard's signed MSI. If WireGuard is missing (first run, or the user
+//! removed it), it is installed silently before connecting, so users never install it themselves.
 
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use tokio::process::Command;
 
@@ -13,18 +17,42 @@ use crate::{Error, Result};
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
+static BUNDLED_MSI: OnceLock<PathBuf> = OnceLock::new();
+
+/// Where the bundled `wireguard-amd64.msi` lives (the app's resource directory).
+pub fn set_bundled_installer(msi: PathBuf) {
+    let _ = BUNDLED_MSI.set(msi);
+}
+
 fn wireguard_dir() -> PathBuf {
     let base = std::env::var_os("ProgramFiles").map(PathBuf::from).unwrap_or_else(|| r"C:\Program Files".into());
     base.join("WireGuard")
 }
 
+/// Installs the bundled WireGuard MSI quietly if WireGuard isn't present.
+async fn ensure_wireguard() -> Result<()> {
+    if wireguard_dir().join("wireguard.exe").exists() {
+        return Ok(());
+    }
+    let msi = BUNDLED_MSI.get().filter(|p| p.exists()).ok_or_else(|| {
+        Error::Tunnel("WireGuard is missing and this build has no bundled installer. Reinstall Hidenseek VPN.".into())
+    })?;
+    // DO_NOT_LAUNCH keeps WireGuard's own window from opening; the app manages tunnels itself.
+    let status = Command::new("msiexec")
+        .args(["/i", &msi.to_string_lossy(), "/qn", "/norestart", "DO_NOT_LAUNCH=1"])
+        .creation_flags(CREATE_NO_WINDOW)
+        .status()
+        .await?;
+    if !status.success() || !wireguard_dir().join("wireguard.exe").exists() {
+        return Err(Error::Tunnel(format!("Installing the WireGuard engine failed ({status})")));
+    }
+    Ok(())
+}
+
 async fn run(exe: &str, args: &[&str]) -> Result<String> {
     let path = wireguard_dir().join(exe);
     if !path.exists() {
-        return Err(Error::Tunnel(
-            "WireGuard for Windows is not installed. Get it from https://www.wireguard.com/install/ and try again."
-                .into(),
-        ));
+        return Err(Error::Tunnel("The WireGuard engine is not installed".into()));
     }
     let output = Command::new(path).args(args).creation_flags(CREATE_NO_WINDOW).output().await?;
     if !output.status.success() {
@@ -35,6 +63,7 @@ async fn run(exe: &str, args: &[&str]) -> Result<String> {
 }
 
 pub async fn up(dir: &Path, config: &str) -> Result<()> {
+    ensure_wireguard().await?;
     if stats().await?.up {
         down(dir).await?;
     }

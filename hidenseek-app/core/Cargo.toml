@@ -19,3 +19,6 @@ x25519-dalek = { version = "3.0.0", features = ["static_secrets"] }
 
 [dev-dependencies]
 tokio = { version = "1.54.0", features = ["rt-multi-thread", "macros"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+defguard_wireguard_rs = "0.12.3"

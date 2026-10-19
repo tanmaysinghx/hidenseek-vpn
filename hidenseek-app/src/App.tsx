@@ -17,6 +17,8 @@ export default function App() {
   const [me, setMe] = useState<User | null>(null);
   const [route, setRoute] = useState<Route>("home");
   const [connected, setConnected] = useState(false);
+  // Set when the user chose "Use a different server", so the baked-in server isn't reapplied.
+  const [manualServer, setManualServer] = useState(false);
 
   const refresh = useCallback(async () => {
     const view = await ipc.appState();
@@ -47,8 +49,12 @@ export default function App() {
       </div>
     );
   }
-  if (!app.apiUrl) return <Setup onDone={refresh} />;
-  if (!app.signedIn || !me) return <SignIn app={app} onDone={refresh} onChangeServer={() => setApp({ ...app, apiUrl: null })} />;
+  const changeServer = () => {
+    setManualServer(true);
+    setApp({ ...app, apiUrl: null });
+  };
+  if (!app.apiUrl) return <Setup onDone={refresh} auto={!manualServer} />;
+  if (!app.signedIn || !me) return <SignIn app={app} onDone={refresh} onChangeServer={changeServer} />;
   if (me.status !== "APPROVED") return <Pending me={me} onRefresh={refresh} />;
 
   const isAdmin = me.role === "ADMIN";
@@ -58,7 +64,7 @@ export default function App() {
       {route === "history" && <HistoryPage />}
       {route === "devices" && <Devices currentDeviceId={app.deviceId} />}
       {route === "admin" && isAdmin && <Admin me={me} />}
-      {route === "settings" && <SettingsPage app={app} me={me} onSignedOut={refresh} onChangeServer={() => setApp({ ...app, apiUrl: null })} />}
+      {route === "settings" && <SettingsPage app={app} me={me} onSignedOut={refresh} onChangeServer={changeServer} />}
     </Shell>
   );
 }
