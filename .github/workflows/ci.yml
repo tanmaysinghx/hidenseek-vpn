@@ -417,9 +417,11 @@ jobs:
       # Optimized build for phones (64- and 32-bit ARM): ~12 MB, versus ~180 MB for a debug APK.
       - name: Build APK
         working-directory: hidenseek-app
-        env:
-          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+        # ANDROID_HOME is a runner environment variable, not part of the `env` context, so NDK_HOME
+        # is derived in the shell (`${{ env.ANDROID_HOME }}` would expand to nothing).
         run: |
+          export NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
+          test -d "$NDK_HOME" || { echo "::error::NDK not found at $NDK_HOME"; exit 1; }
           npm ci
           npx tauri android init --ci
           npx tauri android build --apk --target aarch64 --target armv7 --config "{\"version\":\"$APP_VERSION\"}"
@@ -507,7 +509,9 @@ jobs:
     name: "Stage 5 · Release"
     runs-on: ubuntu-latest
     needs: [ci-status]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.ci-status.result == 'success'
+    # !cancelled() is required: without a status function GitHub adds success(), which is false when
+    # any upstream job failed, including the advisory Android build, and the release would be skipped.
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.ci-status.result == 'success' }}
     permissions:
       contents: write
     steps:
