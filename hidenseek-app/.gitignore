@@ -4,3 +4,5 @@ target/
 src-tauri/gen/
 plugins/tunnel/android/.tauri/
 *.log
+**/.gradle/
+**/build/
