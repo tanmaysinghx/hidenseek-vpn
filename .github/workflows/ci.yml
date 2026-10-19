@@ -1,63 +1,501 @@
 name: CI
 
+# Pipeline (jobs within a stage run in parallel):
+#
+#   1 · Build & test       backend tests · agent tests + binaries · app core tests + UI build
+#   2 · Static analysis    CodeQL (Java, TypeScript, Go)
+#   3 · Package            backend Docker image + smoke test against MySQL · Windows · Linux · Android apps
+#   4 · Gate               single required status check for branch protection
+#   5 · Release            GitHub release with every installer (main pushes only)
+#
+# Release assets keep fixed names, so https://github.com/<repo>/releases/latest/download/<name>
+# always points at the newest build. The landing page and the agent install script rely on that.
+
 on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: '25'
+  NODE_VERSION: '24'
+  # Tauri bundles (MSI especially) need a numeric x.y.z version.
+  APP_VERSION: 0.1.${{ github.run_number }}
+  # Pre-filled server address in the apps. Forks set the HIDENSEEK_DEFAULT_SERVER repo variable.
+  VITE_DEFAULT_SERVER: ${{ vars.HIDENSEEK_DEFAULT_SERVER || 'https://vpn.tanmaysinghx.com' }}
 
 jobs:
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+  # Stage 1 · Build & test
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+
   backend:
+    name: "Stage 1 · Backend tests"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
         with:
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: temurin
-          java-version: "25"
           cache: gradle
-      - name: Test
+
+      # Tests run on an in-memory H2 database in MySQL mode; they never touch a real database.
+      - name: Build and test
         working-directory: hidenseek-backend
-        run: ./gradlew --no-daemon test
+        run: ./gradlew --no-daemon test bootJar
+
+      # A green build that ran no tests is worse than a red one, so the count is asserted.
+      - name: Assert tests actually ran
+        working-directory: hidenseek-backend
+        run: |
+          reports=build/test-results/test
+          [ -d "$reports" ] || { echo "::error::No test reports; the test task did not run."; exit 1; }
+          total=$(grep -ho 'tests="[0-9]*"' $reports/TEST-*.xml | grep -o '[0-9]*' | awk '{s+=$1} END {print s+0}')
+          echo "Executed $total tests."
+          if [ "${total:-0}" -lt 10 ]; then
+            echo "::error::Only $total tests ran; expected at least 10."
+            exit 1
+          fi
+          for f in $reports/TEST-*.xml; do
+            if grep -q '<testsuite[^>]* tests="0"' "$f"; then echo "::error::$(basename "$f") ran zero tests."; exit 1; fi
+          done
+
+      - name: Test summary
+        if: always()
+        working-directory: hidenseek-backend
+        run: |
+          reports=build/test-results/test
+          [ -d "$reports" ] || exit 0
+          sum() { grep -ho "<testsuite[^>]* $1=\"[0-9]*\"" $reports/TEST-*.xml | grep -o "$1=\"[0-9]*\"" | grep -o '[0-9]*' | awk '{s+=$1} END {print s+0}'; }
+          tests=$(sum tests); failures=$(sum failures); errors=$(sum errors); skipped=$(sum skipped)
+          status="Passed"; [ $((failures + errors)) -gt 0 ] && status="Failed"
+          {
+            echo "### Backend tests — $status"
+            echo ""
+            echo "| Classes | Tests | Failures | Errors | Skipped |"
+            echo "|---:|---:|---:|---:|---:|"
+            echo "| $(ls $reports/TEST-*.xml | wc -l) | $tests | $failures | $errors | $skipped |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-reports
+          path: hidenseek-backend/build/test-results/test/
+          retention-days: 7
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: hidenseek-backend/build/libs/hidenseek-backend-*.jar
+          retention-days: 7
 
   agent:
+    name: "Stage 1 · Agent tests & binaries"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version-file: hidenseek-agent/go.mod
           cache-dependency-path: hidenseek-agent/go.sum
+
       - name: Vet and test
         working-directory: hidenseek-agent
         run: make test
-      - name: Shellcheck install script
+
+      - name: Lint install script
         run: shellcheck hidenseek-agent/scripts/install.sh
 
-  app:
+      - name: Build static Linux binaries (amd64, arm64)
+        working-directory: hidenseek-agent
+        run: |
+          make release VERSION=v${{ env.APP_VERSION }}
+          ls -lh dist
+          ./dist/hidenseek-agent-linux-amd64 version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agent-binaries
+          path: hidenseek-agent/dist/*
+          retention-days: 7
+
+  app-core:
+    name: "Stage 1 · App core tests & UI build"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: hidenseek-app/package-lock.json
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: |
-            hidenseek-app/core
-            hidenseek-app/src-tauri
-      - name: Install WebKitGTK
-        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
-      - name: Build UI
+          workspaces: hidenseek-app/core
+
+      # `npm ci` fails if package.json and the lock file disagree, so it doubles as a lock check.
+      - name: Type-check and build UI
         working-directory: hidenseek-app
         run: npm ci && npm run build
-      - name: Test core
+
+      - name: Test core (sign-in, keys, config rendering)
         working-directory: hidenseek-app/core
         run: cargo test && cargo clippy --all-targets -- -D warnings
-      - name: Check app
-        working-directory: hidenseek-app/src-tauri
-        run: cargo clippy -- -D warnings
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+  # Stage 2 · Static analysis
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+
+  codeql:
+    name: "Stage 2 · CodeQL (${{ matrix.language }})"
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.repository.private }}
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [java-kotlin, javascript-typescript, go]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.language == 'go' && 'autobuild' || 'none' }}
+          queries: security-extended
+
+      - if: matrix.language == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: hidenseek-agent/go.mod
+
+      - if: matrix.language == 'go'
+        working-directory: hidenseek-agent
+        run: go build ./...
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+  # Stage 3 · Package
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+
+  image:
+    name: "Stage 3 · Backend image & smoke test"
+    runs-on: ubuntu-latest
+    needs: [backend, agent, app-core]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: hidenseek-backend/Dockerfile
+          push: false
+          load: true
+          tags: hidenseek-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Proves the image runs: Flyway migrates a real MySQL, Hibernate validates the schema, and the
+      # public endpoints answer. H2 in Stage 1 cannot catch MySQL-only schema problems.
+      - name: Smoke test against MySQL 8
+        run: |
+          docker network create ci-net
+          docker run -d --name ci-db --network ci-net \
+            -e MYSQL_DATABASE=hidenseek -e MYSQL_USER=hidenseek -e MYSQL_PASSWORD=ci-password \
+            -e MYSQL_ROOT_PASSWORD=ci-root mysql:8.4
+          for i in $(seq 1 45); do
+            docker exec ci-db mysqladmin ping -h 127.0.0.1 -uhidenseek -pci-password --silent && break
+            sleep 2
+          done
+
+          docker run -d --name ci-app --network ci-net -p 8090:8090 \
+            -e DB_URL="jdbc:mysql://ci-db:3306/hidenseek?allowPublicKeyRetrieval=true&useSSL=false" \
+            -e DB_USERNAME=hidenseek -e DB_PASSWORD=ci-password \
+            -e PORTAL_URL=https://sso.example.com -e PORTAL_CLIENT_ID=hidenseek-vpn \
+            -e PUBLIC_URL=http://localhost:8090 \
+            hidenseek-backend:ci
+
+          started=$(date +%s)
+          for i in $(seq 1 40); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' ci-app 2>/dev/null || echo starting)
+            [ "$status" = "healthy" ] && break
+            if [ "$(docker inspect -f '{{.State.Status}}' ci-app)" = "exited" ]; then
+              echo "::error::Container exited during startup."; docker logs ci-app; exit 1
+            fi
+            sleep 5
+          done
+          boot_seconds=$(( $(date +%s) - started ))
+          if [ "$(docker inspect -f '{{.State.Health.Status}}' ci-app)" != "healthy" ]; then
+            echo "::error::Container never became healthy."; docker logs ci-app; exit 1
+          fi
+
+          config=$(curl -fsS http://localhost:8090/api/v1/public/config)
+          echo "Public config: $config"
+          curl -fsS http://localhost:8090/ | grep -q "Hidenseek VPN" || { echo "::error::Landing page not served."; exit 1; }
+          curl -fsS http://localhost:8090/install.sh | head -1 | grep -q bash || { echo "::error::install.sh not served."; exit 1; }
+          [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8090/api/v1/me)" = "401" ] \
+            || { echo "::error::/api/v1/me must require a token."; exit 1; }
+          docker logs ci-app 2>&1 | grep -q 'Successfully applied 1 migration' \
+            || { echo "::error::Flyway did not migrate the schema."; docker logs ci-app; exit 1; }
+
+          size=$(docker image inspect hidenseek-backend:ci --format '{{.Size}}' | awk '{printf "%.0f MB", $1/1024/1024}')
+          {
+            echo "### Backend image"
+            echo ""
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| Image size | $size |"
+            echo "| Healthy after | ${boot_seconds}s |"
+            echo "| Flyway on MySQL 8.4 | migrated |"
+            echo "| Landing page · install.sh · auth | ok |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Container logs on failure
+        if: failure()
+        run: docker logs ci-app || true
+
+  desktop:
+    name: "Stage 3 · ${{ matrix.name }} app"
+    needs: [app-core]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+          - name: Linux
+            # Oldest supported Ubuntu, so the AppImage and .deb run on older distros too.
+            os: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: hidenseek-app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: hidenseek-app/src-tauri
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 rpm
+
+      - name: Build installers
+        working-directory: hidenseek-app
+        shell: bash
+        run: |
+          npm ci
+          npx tauri build --config "{\"version\":\"$APP_VERSION\"}"
+
+      - name: Collect installers
+        shell: bash
+        run: |
+          mkdir -p out
+          b=hidenseek-app/src-tauri/target/release/bundle
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cp $b/nsis/*-setup.exe out/hidenseek-vpn-windows-x64-setup.exe
+            cp $b/msi/*.msi       out/hidenseek-vpn-windows-x64.msi
+          else
+            cp $b/deb/*.deb           out/hidenseek-vpn-linux-amd64.deb
+            cp $b/rpm/*.rpm           out/hidenseek-vpn-linux-x86_64.rpm
+            cp $b/appimage/*.AppImage out/hidenseek-vpn-linux-x86_64.AppImage
+          fi
+          ls -l out
+          {
+            echo "### ${{ matrix.name }} app $APP_VERSION"
+            echo ""
+            echo "| File | Size |"
+            echo "|---|---:|"
+            for f in out/*; do echo "| $(basename "$f") | $(du -h "$f" | cut -f1) |"; done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ runner.os }}
+          path: out/*
+          retention-days: 7
+
+  android:
+    name: "Stage 3 · Android app"
+    runs-on: ubuntu-latest
+    needs: [app-core]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: hidenseek-app/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: sdkmanager --install "ndk;27.2.12479018"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: hidenseek-app/src-tauri
+
+      # Debug-signed so it can be sideloaded. A Play Store build needs a release keystore.
+      - name: Build APK
+        working-directory: hidenseek-app
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+        run: |
+          npm ci
+          npx tauri android init --ci
+          npx tauri android build --apk --debug --target aarch64 --target x86_64 --config "{\"version\":\"$APP_VERSION\"}"
+          mkdir -p ../out
+          cp $(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -1) ../out/hidenseek-vpn-android.apk
+          ls -l ../out
+          echo "### Android app $APP_VERSION — $(du -h ../out/hidenseek-vpn-android.apk | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-Android
+          path: out/*
+          retention-days: 7
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+  # Stage 4 · Gate
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+
+  ci-status:
+    name: "Stage 4 · All checks passed"
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [backend, agent, app-core, codeql, image, desktop, android]
+    steps:
+      - name: Evaluate results
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "### Pipeline result" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Job | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          failed=0
+          for job in $(echo "$RESULTS" | jq -r 'keys[]'); do
+            result=$(echo "$RESULTS" | jq -r --arg j "$job" '.[$j].result')
+            case "$result" in success|skipped) ;; *) failed=1 ;; esac
+            echo "| $job | $result |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          if [ "$failed" = "1" ]; then
+            echo "::error::One or more pipeline jobs failed or were cancelled."
+            exit 1
+          fi
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+  # Stage 5 · Release
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+
+  release:
+    name: "Stage 5 · Release"
+    runs-on: ubuntu-latest
+    needs: [ci-status]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.ci-status.result == 'success'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build outputs
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Prepare release artifacts
+        id: prep
+        run: |
+          mkdir -p release
+          cp artifacts/app-*/* release/
+          cp artifacts/agent-binaries/* release/
+          cp "$(find artifacts/backend-jar -name '*.jar' ! -name '*-plain.jar' | head -1)" release/hidenseek-backend.jar
+          cd release
+          sha256sum hidenseek-backend.jar > hidenseek-backend.jar.sha256
+          sha256sum hidenseek-vpn-* > SHA256SUMS
+          ls -l
+          echo "tag=v${APP_VERSION}" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Release v${APP_VERSION}"
+            echo '```'
+            cat SHA256SUMS hidenseek-backend.jar.sha256
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create GitHub release and tag
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.prep.outputs.tag }}
+          name: Hidenseek VPN ${{ steps.prep.outputs.tag }}
+          draft: false
+          prerelease: false
+          make_latest: true
+          generate_release_notes: true
+          files: release/*
+          body: |
+            ## Hidenseek VPN ${{ steps.prep.outputs.tag }}
+
+            Install the app, then enter your server address (for example `vpn.tanmaysinghx.com`) and sign in with Portal.
+
+            ### Apps
+            | Platform | Download | Notes |
+            |---|---|---|
+            | Windows 11 | **[Installer (.exe)](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-windows-x64-setup.exe)** · [MSI](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-windows-x64.msi) | Needs [WireGuard for Windows](https://www.wireguard.com/install/) |
+            | Linux | **[.deb](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-linux-amd64.deb)** · [.rpm](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-linux-x86_64.rpm) · [AppImage](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-linux-x86_64.AppImage) | Needs `wireguard-tools` |
+            | Android 7+ | **[APK](https://github.com/${{ github.repository }}/releases/download/${{ steps.prep.outputs.tag }}/hidenseek-vpn-android.apk)** | Allow installs from your browser |
+
+            ### Server
+            - `hidenseek-backend.jar`: control plane (Java 25), or deploy with `deploy/docker-compose.yml`
+            - `hidenseek-agent-linux-amd64` / `-arm64`: VPN node agent, installed by the one-line command in the admin console
+
+            Checksums: `SHA256SUMS`, `*.sha256`.

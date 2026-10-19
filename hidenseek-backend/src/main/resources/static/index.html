@@ -2,91 +2,496 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hidenseek VPN</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hidenseek VPN · Private WireGuard tunnels</title>
+  <meta name="description" content="Hidenseek VPN: a fast, private WireGuard VPN on servers you trust. Apps for Windows 11, Linux and Android. Open source.">
+  <meta name="theme-color" content="#070a10">
+  <meta property="og:title" content="Hidenseek VPN">
+  <meta property="og:description" content="Fast, private WireGuard tunnels on servers you trust. Windows, Linux and Android.">
   <link rel="icon" type="image/svg+xml" href="/logo.svg">
   <style>
-    :root { --bg:#0b0f17; --card:#0f1420; --line:rgba(255,255,255,.07); --text:#e6edf6; --muted:#93a1b5; --brand:#34d399; --amber:#fbbf24; --red:#fb7185; }
+    :root {
+      --bg: #070a10; --bg2: #0b0f17; --card: rgba(15, 20, 32, .72); --line: rgba(255, 255, 255, .07); --line2: rgba(255, 255, 255, .12);
+      --text: #e6edf6; --muted: #93a1b5; --dim: #6b7a93; --brand: #34d399; --brand2: #10b981; --sky: #38bdf8; --amber: #fbbf24; --red: #fb7185;
+      --radius: 20px; --mono: ui-monospace, "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    }
     * { box-sizing: border-box; }
-    body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font:16px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-           background-image: radial-gradient(700px 380px at 50% -120px, rgba(16,185,129,.16), transparent), radial-gradient(500px 360px at 100% 100%, rgba(14,165,233,.10), transparent); }
-    main { max-width: 640px; margin: 0 auto; padding: 64px 16px 48px; }
-    header { text-align:center; margin-bottom: 32px; }
-    header img { width:64px; height:64px; filter: drop-shadow(0 10px 30px rgba(16,185,129,.35)); }
-    h1 { margin: 14px 0 4px; font-size: 30px; letter-spacing: -.02em; }
-    .sub { color: var(--muted); margin: 0; }
-    .card { background: rgba(15,20,32,.85); border:1px solid var(--line); border-radius: 18px; padding: 22px; margin-top: 16px; }
-    .status { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .pill { display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,.05); color:var(--muted); }
-    .dot { width:8px; height:8px; border-radius:50%; background:currentColor; }
-    .ok { color: var(--brand); background: rgba(52,211,153,.1); } .ok .dot { box-shadow: 0 0 10px var(--brand); }
-    .bad { color: var(--red); background: rgba(251,113,133,.1); }
-    h2 { font-size: 15px; margin: 0 0 12px; }
-    ol { margin: 0; padding-left: 20px; color: var(--muted); } li { margin: 6px 0; } li b { color: var(--text); }
-    .copy { display:flex; margin-top: 12px; border:1px solid rgba(255,255,255,.1); border-radius:12px; overflow:hidden; background: rgba(0,0,0,.25); }
-    .copy code { flex:1; padding: 11px 14px; font: 14px ui-monospace, "Cascadia Code", Consolas, monospace; color: var(--brand); overflow-x:auto; white-space:nowrap; }
-    .copy button { border:0; border-left:1px solid rgba(255,255,255,.1); background:transparent; color:var(--muted); font-weight:600; padding: 0 14px; cursor:pointer; }
-    .copy button:hover { color: var(--text); background: rgba(255,255,255,.05); }
-    .downloads { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
-    .downloads a { display:block; padding: 14px; border-radius: 14px; border:1px solid var(--line); background: rgba(255,255,255,.03); color: var(--text); text-decoration:none; }
-    .downloads a:hover { border-color: rgba(52,211,153,.4); }
-    .downloads small { display:block; color: var(--muted); font-size: 12px; }
-    footer { text-align:center; color: var(--muted); font-size: 13px; margin-top: 28px; }
-    footer a { color: var(--muted); }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    a { color: inherit; }
+    .wrap { width: 100%; max-width: 1140px; margin: 0 auto; padding: 0 20px; }
+    .glow { position: absolute; pointer-events: none; border-radius: 50%; filter: blur(90px); }
+
+    /* Nav */
+    nav { position: sticky; top: 0; z-index: 30; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); background: rgba(7, 10, 16, .65); border-bottom: 1px solid var(--line); }
+    nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; letter-spacing: -.01em; }
+    .brand img { width: 30px; height: 30px; }
+    .links { display: flex; align-items: center; gap: 26px; font-size: 14px; color: var(--muted); }
+    .links a { text-decoration: none; } .links a:hover { color: var(--text); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 46px; padding: 0 20px; border-radius: 14px; font-weight: 650; font-size: 15px; text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: transform .15s, background .15s, border-color .15s, box-shadow .15s; white-space: nowrap; }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: linear-gradient(180deg, #4ade80, var(--brand2)); color: #04130c; box-shadow: 0 12px 40px -12px rgba(16, 185, 129, .7), inset 0 1px 0 rgba(255,255,255,.35); }
+    .btn-primary:hover { box-shadow: 0 16px 50px -12px rgba(16, 185, 129, .9), inset 0 1px 0 rgba(255,255,255,.35); }
+    .btn-ghost { background: rgba(255, 255, 255, .04); border-color: var(--line2); color: var(--text); }
+    .btn-ghost:hover { background: rgba(255, 255, 255, .08); }
+    .btn-sm { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 11px; }
+    .btn svg { width: 18px; height: 18px; flex: none; }
+
+    /* Hero */
+    .hero { position: relative; padding: 84px 0 72px; overflow: hidden; }
+    .hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; align-items: center; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; border: 1px solid var(--line2); background: rgba(255,255,255,.03); font-size: 13px; color: var(--muted); }
+    .eyebrow b { color: #04130c; background: var(--brand); padding: 1px 8px; border-radius: 999px; font-size: 11px; letter-spacing: .04em; }
+    h1 { font-size: clamp(40px, 6vw, 68px); line-height: 1.02; letter-spacing: -.035em; margin: 22px 0 18px; font-weight: 800; }
+    h1 .grad { background: linear-gradient(100deg, #6ee7b7 0%, #34d399 35%, #38bdf8 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .lead { font-size: 18px; color: var(--muted); max-width: 540px; margin: 0 0 30px; }
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .cta-note { margin-top: 14px; font-size: 13px; color: var(--dim); }
+    .status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-top: 26px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+    .dot.on { background: var(--brand); box-shadow: 0 0 12px var(--brand); }
+    .dot.off { background: var(--red); }
+
+    /* App mock */
+    .mock { position: relative; justify-self: center; width: min(100%, 420px); }
+    .window { position: relative; border-radius: 26px; border: 1px solid var(--line2); background: linear-gradient(180deg, rgba(20,26,40,.95), rgba(11,15,23,.95)); box-shadow: 0 50px 120px -40px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.02) inset; overflow: hidden; }
+    .titlebar { display: flex; gap: 7px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+    .titlebar i { width: 11px; height: 11px; border-radius: 50%; background: #2a3448; }
+    .screen { padding: 26px 26px 24px; text-align: center; position: relative; }
+    .screen::before { content: ""; position: absolute; inset: 0 0 auto; height: 220px; background: radial-gradient(260px 160px at 50% 0, rgba(16,185,129,.22), transparent); }
+    .protected { position: relative; display: inline-flex; align-items: center; gap: 6px; font-weight: 650; font-size: 14px; color: #6ee7b7; }
+    .power { position: relative; width: 176px; height: 176px; margin: 22px auto 18px; display: grid; place-items: center; }
+    .power .ring { position: absolute; inset: 14px; border-radius: 50%; background: rgba(52, 211, 153, .28); animation: ping 2.6s cubic-bezier(.4,0,.2,1) infinite; }
+    .power .btnc { position: relative; width: 132px; height: 132px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(180deg, #4ade80, var(--brand2)); color: #04130c; box-shadow: 0 24px 60px -18px rgba(16,185,129,.85), inset 0 2px 0 rgba(255,255,255,.35); }
+    .power svg { width: 50px; height: 50px; }
+    @keyframes ping { 0% { transform: scale(.9); opacity: .6; } 80%, 100% { transform: scale(1.38); opacity: 0; } }
+    .loc { position: relative; display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid var(--line); font-size: 14px; text-align: left; }
+    .flag-sg { width: 28px; height: 20px; border-radius: 4px; background: linear-gradient(#ef3340 50%, #fff 50%); position: relative; flex: none; box-shadow: 0 0 0 1px rgba(255,255,255,.15); }
+    .flag-sg::after { content: ""; position: absolute; left: 4px; top: 2px; width: 7px; height: 7px; border-radius: 50%; box-shadow: -1px 0 0 1.5px #fff; }
+    .loc small { display: block; color: var(--dim); font-size: 12px; line-height: 1.2; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px; position: relative; }
+    .metrics div { padding: 10px 6px; border-radius: 12px; background: rgba(255,255,255,.035); }
+    .metrics span { display: block; font-size: 11px; color: var(--dim); }
+    .metrics b { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+    .chip { position: absolute; display: flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 14px; background: rgba(15,20,32,.92); border: 1px solid var(--line2); font-size: 13px; box-shadow: 0 20px 50px -20px rgba(0,0,0,.8); backdrop-filter: blur(10px); animation: float 6s ease-in-out infinite; }
+    .chip svg { width: 16px; height: 16px; color: var(--brand); }
+    .chip.c1 { left: -38px; top: 92px; } .chip.c2 { right: -30px; bottom: 76px; animation-delay: -3s; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+    /* Sections */
+    section { position: relative; padding: 88px 0; }
+    .kicker { color: var(--brand); font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    h2 { font-size: clamp(30px, 4vw, 44px); letter-spacing: -.03em; line-height: 1.1; margin: 10px 0 14px; }
+    .sec-lead { color: var(--muted); font-size: 17px; max-width: 620px; margin: 0; }
+    .head { margin-bottom: 44px; }
+    .head.center { text-align: center; } .head.center .sec-lead { margin: 0 auto; }
+
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; transition: border-color .2s, transform .2s; }
+    .card:hover { border-color: var(--line2); }
+    .icon { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: rgba(52, 211, 153, .1); color: var(--brand); margin-bottom: 16px; }
+    .icon svg { width: 21px; height: 21px; }
+    .card h3 { margin: 0 0 6px; font-size: 17px; letter-spacing: -.01em; }
+    .card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+    .steps { counter-reset: s; }
+    .step::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; margin-bottom: 16px; background: rgba(56, 189, 248, .1); color: var(--sky); font-weight: 700; font-size: 14px; }
+
+    /* Download */
+    #download { background: linear-gradient(180deg, transparent, rgba(16, 185, 129, .035) 30%, transparent); }
+    .dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .os { display: flex; flex-direction: column; }
+    .os.match { border-color: rgba(52, 211, 153, .45); box-shadow: 0 30px 80px -40px rgba(16, 185, 129, .55); }
+    .os .badge { position: absolute; top: 18px; right: 18px; font-size: 11px; font-weight: 700; color: #04130c; background: var(--brand); padding: 3px 9px; border-radius: 999px; display: none; }
+    .os.match .badge { display: block; }
+    .os .osicon { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: rgba(255,255,255,.05); margin-bottom: 16px; }
+    .os .osicon svg { width: 26px; height: 26px; }
+    .os .req { font-size: 13px; color: var(--dim); margin: 4px 0 20px; }
+    .os .req a { color: var(--muted); }
+    .os .actions { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+    .os .alts { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+    .os .alts a { text-decoration: none; border-bottom: 1px dashed var(--line2); } .os .alts a:hover { color: var(--text); }
+    .meta { margin-top: 18px; text-align: center; font-size: 13px; color: var(--dim); }
+    .meta code, .inline { font-family: var(--mono); font-size: 13px; color: #6ee7b7; background: rgba(52,211,153,.08); padding: 2px 7px; border-radius: 7px; }
+
+    .install { margin-top: 40px; }
+    .tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(0,0,0,.35); border: 1px solid var(--line); }
+    .tabs button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 14px; font-weight: 600; padding: 8px 16px; border-radius: 10px; cursor: pointer; }
+    .tabs button[aria-selected="true"] { background: #1d2536; color: var(--text); box-shadow: 0 1px 0 rgba(255,255,255,.05) inset; }
+    .panel { display: none; margin-top: 16px; }
+    .panel.active { display: block; }
+    .panel ol { margin: 0; padding: 0; list-style: none; counter-reset: i; display: grid; gap: 14px; }
+    .panel li { counter-increment: i; display: grid; grid-template-columns: 30px 1fr; gap: 12px; color: var(--muted); }
+    .panel li::before { content: counter(i); width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: rgba(255,255,255,.05); color: var(--text); font-size: 13px; font-weight: 700; }
+    .panel li b { color: var(--text); font-weight: 600; }
+    .term { margin-top: 8px; display: flex; align-items: stretch; border-radius: 12px; border: 1px solid var(--line2); background: #05070c; overflow: hidden; }
+    .term code { flex: 1; padding: 11px 14px; font-family: var(--mono); font-size: 13px; color: #6ee7b7; overflow-x: auto; white-space: nowrap; }
+    .term button { border: 0; border-left: 1px solid var(--line2); background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; padding: 0 14px; cursor: pointer; }
+    .term button:hover { color: var(--text); background: rgba(255,255,255,.05); }
+
+    /* Privacy */
+    .privacy { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .privacy ul { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+    .privacy li { display: flex; gap: 10px; color: var(--muted); font-size: 15px; }
+    .privacy li svg { width: 18px; height: 18px; flex: none; margin-top: 3px; }
+    .yes svg { color: var(--brand); } .no svg { color: var(--dim); } .maybe svg { color: var(--amber); }
+
+    /* Self-host */
+    .host { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; padding: 36px; border-radius: 26px; border: 1px solid var(--line2); background: radial-gradient(500px 220px at 0 0, rgba(16,185,129,.14), transparent), radial-gradient(500px 220px at 100% 100%, rgba(56,189,248,.12), transparent), var(--card); }
+    .host h2 { font-size: 30px; margin: 0 0 6px; }
+    .host p { margin: 0; color: var(--muted); max-width: 560px; }
+
+    footer { border-top: 1px solid var(--line); padding: 30px 0 40px; color: var(--dim); font-size: 14px; }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
+    footer a { color: var(--muted); text-decoration: none; } footer a:hover { color: var(--text); }
+
+    .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .ring, .chip { animation: none !important; } html { scroll-behavior: auto; } }
+
+    @media (max-width: 920px) {
+      .hero .wrap { grid-template-columns: 1fr; gap: 48px; }
+      .hero { padding-top: 56px; }
+      .grid3, .dl { grid-template-columns: 1fr; }
+      .privacy { grid-template-columns: 1fr; }
+      .chip.c1 { left: -6px; } .chip.c2 { right: -6px; }
+    }
+    .brand { white-space: nowrap; }
+    @media (max-width: 640px) {
+      .links a:not(.btn-primary) { display: none; }
+      .chip.c1 { display: none; }
+      .chip.c2 { bottom: -18px; right: 12px; }
+      section { padding: 64px 0; }
+      .host { padding: 26px; }
+      .tabs { display: flex; width: 100%; } .tabs button { flex: 1; padding: 8px 6px; }
+    }
   </style>
 </head>
 <body>
-<main>
-  <header>
-    <img src="/logo.svg" alt="">
-    <h1>Hidenseek VPN</h1>
-    <p class="sub">Private WireGuard tunnels on servers you trust.</p>
-  </header>
 
-  <section class="card status">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-power" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></symbol>
+    <symbol id="i-dns" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/><path d="M6 6.5h.01M6 17.5h.01"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/></symbol>
+    <symbol id="i-windows" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.1 10.4 4v7.2H3V5.1zm0 13.8 7.4 1.1v-7.1H3v6zm8.3 1.2L21 21.5v-8.6h-9.7v7.2zm0-16.2v7.3H21V2.5l-9.7 1.4z"/></symbol>
+    <symbol id="i-linux" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 2c-2.1 0-3.4 1.8-3.4 4.3 0 1.4.3 2.3-.6 3.6-1 1.5-2.6 3.3-3 5.4-.2 1-.1 1.9.3 2.6-.6.4-1.4.6-1.6 1.3-.3.9.6 1.4 1.8 1.7 1.3.3 2.4 1.2 3.4 1.1 1-.1 1.4-.8 1.6-1.2 1 .2 2.2.2 3.3 0 .3.5.8 1.2 1.8 1.2 1.1 0 2-.9 3.2-1.4 1.1-.4 1.8-.8 1.6-1.6-.2-.7-1.1-.8-1.6-1.2.5-1 .4-2.1.1-3-.5-1.6-1.8-3.3-2.9-4.8-.8-1.1-.6-2.2-.6-3.7C15.9 3.8 14.6 2 12.5 2zm-1.3 4.3c.4 0 .7.5.7 1.1 0 .3-.1.6-.3.8l-.6-.2c.1-.2.2-.4.2-.6 0-.3-.1-.5-.2-.5s-.3.2-.3.5v.2l-.5-.2v-.2c0-.5.4-.9 1-.9zm2.6 0c.6 0 1.1.5 1.1 1.1 0 .3-.1.5-.2.7l-.6-.1c.1-.2.2-.4.2-.6 0-.4-.2-.6-.4-.6s-.4.3-.4.6v.2l-.6-.2c0-.6.4-1.1.9-1.1zm-1.3 2.4c.6 0 1.5.6 2.1.8.4.1.7.4.6.7-.1.4-.7.7-1.4 1.1-.6.4-1 .6-1.4.6s-.8-.2-1.3-.6c-.6-.4-1.2-.8-1.3-1.1 0-.3.3-.5.6-.7.6-.3 1.4-.8 2.1-.8z"/></symbol>
+    <symbol id="i-android" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.5 19.3 6.6a.4.4 0 0 0-.7-.4l-1.7 3a10.6 10.6 0 0 0-9.8 0l-1.7-3a.4.4 0 0 0-.7.4l1.7 2.9A9.8 9.8 0 0 0 1.5 17h21a9.8 9.8 0 0 0-4.9-7.5zM7 14.4a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm10 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></symbol>
+  </defs>
+</svg>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="/logo.svg" alt="">Hidenseek VPN</a>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#privacy">Privacy</a>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/tanmaysinghx/hidenseek-vpn" rel="noopener"><svg><use href="#i-github"/></svg>GitHub</a>
+      <a class="btn btn-primary btn-sm" href="#download">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="glow" style="width:720px;height:520px;left:-200px;top:-260px;background:rgba(16,185,129,.18)"></div>
+  <div class="glow" style="width:560px;height:460px;right:-180px;top:80px;background:rgba(56,189,248,.12)"></div>
+  <div class="wrap">
     <div>
-      <div style="font-weight:600">Server status</div>
-      <div class="sub" style="font-size:14px" id="host"></div>
+      <span class="eyebrow"><b>NEW</b> Built on WireGuard · Open source</span>
+      <h1>Your internet,<br><span class="grad">hidden in plain sight.</span></h1>
+      <p class="lead">Hidenseek is a fast, private VPN that runs on servers you and your friends trust. Sign in once, tap connect, and everything you do online goes through an encrypted WireGuard tunnel.</p>
+      <div class="cta">
+        <a class="btn btn-primary" id="hero-dl" href="#download"><svg><use href="#i-down"/></svg><span>Download</span></a>
+        <a class="btn btn-ghost" href="#how">See how it works</a>
+      </div>
+      <div class="cta-note" id="hero-note">Free for Windows 11, Linux and Android.</div>
+      <div class="status"><span class="dot" id="status-dot"></span><span id="status-text">Checking server…</span></div>
     </div>
-    <span class="pill" id="status"><span class="dot"></span>Checking…</span>
-  </section>
 
-  <section class="card">
-    <h2>Get connected</h2>
-    <ol>
-      <li><b>Install the app</b> for your device (below).</li>
-      <li>Enter this <b>server address</b> when the app asks:</li>
-    </ol>
-    <div class="copy"><code id="address"></code><button id="copy" type="button">Copy</button></div>
-    <ol start="3" style="margin-top:12px">
-      <li><b>Sign in</b> with your Portal account, or create one.</li>
-      <li>Wait for an admin to <b>approve</b> you, then tap connect.</li>
-    </ol>
-  </section>
-
-  <section class="card">
-    <h2>Download</h2>
-    <div class="downloads">
-      <a href="https://github.com/tanmaysinghx/hidenseek-vpn/releases/latest">Windows 11<small>Installer · needs WireGuard</small></a>
-      <a href="https://github.com/tanmaysinghx/hidenseek-vpn/releases/latest">Linux<small>.deb · .rpm · AppImage</small></a>
-      <a href="https://github.com/tanmaysinghx/hidenseek-vpn/releases/latest">Android<small>APK</small></a>
+    <div class="mock reveal" aria-hidden="true">
+      <div class="window">
+        <div class="titlebar"><i></i><i></i><i></i></div>
+        <div class="screen">
+          <div class="protected"><svg width="16" height="16"><use href="#i-shield"/></svg>Protected</div>
+          <div class="power"><span class="ring"></span><span class="btnc"><svg><use href="#i-power"/></svg></span></div>
+          <div class="loc"><span class="flag-sg"></span><span><b>Singapore 1</b><small>Singapore</small></span></div>
+          <div class="metrics">
+            <div><span>Duration</span><b id="mock-clock">00:12:48</b></div>
+            <div><span>Download</span><b>184 MB</b></div>
+            <div><span>Upload</span><b>12.6 MB</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="chip c1"><svg><use href="#i-bolt"/></svg>Connected in 0.4s</div>
+      <div class="chip c2"><svg><use href="#i-shield"/></svg>DNS leak protection</div>
     </div>
-  </section>
+  </div>
+</header>
 
-  <footer>Open source · <a href="https://github.com/tanmaysinghx/hidenseek-vpn">github.com/tanmaysinghx/hidenseek-vpn</a></footer>
-</main>
+<section id="features">
+  <div class="wrap">
+    <div class="head reveal">
+      <div class="kicker">Features</div>
+      <h2>Everything a VPN should be.<br>Nothing it shouldn't.</h2>
+      <p class="sec-lead">No ads, no data brokers, no "unlimited" plans that aren't. Just a tunnel that works, on hardware you know.</p>
+    </div>
+    <div class="grid3">
+      <div class="card reveal"><div class="icon"><svg><use href="#i-bolt"/></svg></div><h3>WireGuard fast</h3><p>A modern protocol built into the Linux kernel. Connects in under a second and stays out of your way on Wi-Fi and mobile data.</p></div>
+      <div class="card reveal"><div class="icon"><svg><use href="#i-shield"/></svg></div><h3>Full tunnel, no leaks</h3><p>All IPv4 and IPv6 traffic goes through the tunnel, and DNS is forced through the server, so lookups never reach your ISP.</p></div>
+      <div class="card reveal"><div class="icon"><svg><use href="#i-key"/></svg></div><h3>Keys stay on your device</h3><p>Each device makes its own key pair. The private key never leaves it, not even to our server.</p></div>
+      <div class="card reveal"><div class="icon"><svg><use href="#i-users"/></svg></div><h3>One account, every device</h3><p>Sign in with Portal SSO on your laptop and phone. New people are approved by an admin before they can connect.</p></div>
+      <div class="card reveal"><div class="icon"><svg><use href="#i-globe"/></svg></div><h3>Pick your location</h3><p>Every server the admin adds becomes a location in the app. Switch with one tap; the tunnel moves with you.</p></div>
+      <div class="card reveal"><div class="icon"><svg><use href="#i-code"/></svg></div><h3>Open source</h3><p>Every line is on GitHub under the MIT license. Read it, audit it, or run your own copy on any VPS.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="head center reveal">
+      <div class="kicker">How it works</div>
+      <h2>Up and running in a minute</h2>
+      <p class="sec-lead">Three steps, once. After that it's a single tap.</p>
+    </div>
+    <div class="grid3 steps">
+      <div class="card step reveal"><h3>Install the app</h3><p>Grab the version for your device below. Windows and Linux use the official WireGuard engine; Android has it built in.</p></div>
+      <div class="card step reveal"><h3>Sign in</h3><p>Enter <span class="inline" data-host>this server</span> and sign in with your Portal account, or create one. An admin approves new accounts.</p></div>
+      <div class="card step reveal"><h3>Tap connect</h3><p>Choose a location and hit the power button. Your connection is encrypted from your device to the server.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap">
+    <div class="head center reveal">
+      <div class="kicker">Download</div>
+      <h2>Get Hidenseek for your device</h2>
+      <p class="sec-lead" id="dl-lead">Pick your platform. Your server address is <span class="inline" data-host></span>.</p>
+    </div>
+
+    <div class="dl">
+      <div class="card os reveal" data-os="windows">
+        <span class="badge">Your device</span>
+        <div class="osicon"><svg style="color:#60a5fa"><use href="#i-windows"/></svg></div>
+        <h3>Windows</h3>
+        <p class="req">Windows 10 or 11, 64-bit · needs <a href="https://www.wireguard.com/install/" rel="noopener">WireGuard</a></p>
+        <div class="actions">
+          <a class="btn btn-primary" data-asset="hidenseek-vpn-windows-x64-setup.exe"><svg><use href="#i-down"/></svg>Download installer<span class="size"></span></a>
+          <div class="alts"><a data-asset="hidenseek-vpn-windows-x64.msi">MSI package</a></div>
+        </div>
+      </div>
+      <div class="card os reveal" data-os="linux">
+        <span class="badge">Your device</span>
+        <div class="osicon"><svg style="color:#fbbf24"><use href="#i-linux"/></svg></div>
+        <h3>Linux</h3>
+        <p class="req">Ubuntu, Debian, Fedora, Arch… · needs <span class="inline">wireguard-tools</span></p>
+        <div class="actions">
+          <a class="btn btn-primary" data-asset="hidenseek-vpn-linux-amd64.deb"><svg><use href="#i-down"/></svg>Download .deb<span class="size"></span></a>
+          <div class="alts"><a data-asset="hidenseek-vpn-linux-x86_64.rpm">.rpm (Fedora)</a><a data-asset="hidenseek-vpn-linux-x86_64.AppImage">AppImage (any distro)</a></div>
+        </div>
+      </div>
+      <div class="card os reveal" data-os="android">
+        <span class="badge">Your device</span>
+        <div class="osicon"><svg style="color:#4ade80"><use href="#i-android"/></svg></div>
+        <h3>Android</h3>
+        <p class="req">Android 7.0 or newer · nothing else to install</p>
+        <div class="actions">
+          <a class="btn btn-primary" data-asset="hidenseek-vpn-android.apk"><svg><use href="#i-down"/></svg>Download APK<span class="size"></span></a>
+          <div class="alts"><span>Allow installs from your browser when asked</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="meta" id="release-meta">Loading the latest release…</p>
+
+    <div class="install card reveal">
+      <h3 style="margin:0 0 14px">Install guide</h3>
+      <div class="tabs" role="tablist">
+        <button role="tab" data-tab="windows" aria-selected="true">Windows</button>
+        <button role="tab" data-tab="linux" aria-selected="false">Linux</button>
+        <button role="tab" data-tab="android" aria-selected="false">Android</button>
+      </div>
+      <div class="panel active" data-panel="windows">
+        <ol>
+          <li><span>Install <b>WireGuard for Windows</b> from <a href="https://www.wireguard.com/install/" rel="noopener">wireguard.com/install</a>. Hidenseek uses its tunnel engine.</span></li>
+          <li><span>Run <b>hidenseek-vpn-windows-x64-setup.exe</b>. If SmartScreen says "Windows protected your PC", click <b>More info → Run anyway</b> (the app isn't code-signed yet).</span></li>
+          <li><span>Open Hidenseek VPN and accept the administrator prompt; it needs this to manage the tunnel.</span></li>
+          <li><span>Enter <span class="inline" data-host></span>, sign in, and tap the power button.</span></li>
+        </ol>
+      </div>
+      <div class="panel" data-panel="linux">
+        <ol>
+          <li><span><b>Ubuntu / Debian:</b> install the package; it pulls in WireGuard automatically.
+            <div class="term"><code>sudo apt install ./hidenseek-vpn-linux-amd64.deb</code><button data-copy>Copy</button></div></span></li>
+          <li><span><b>Fedora:</b>
+            <div class="term"><code>sudo dnf install ./hidenseek-vpn-linux-x86_64.rpm</code><button data-copy>Copy</button></div></span></li>
+          <li><span><b>Any other distro:</b> install <span class="inline">wireguard-tools</span>, then run the AppImage.
+            <div class="term"><code>chmod +x hidenseek-vpn-linux-x86_64.AppImage && ./hidenseek-vpn-linux-x86_64.AppImage</code><button data-copy>Copy</button></div></span></li>
+          <li><span>Open Hidenseek VPN, enter <span class="inline" data-host></span>, sign in and connect. You'll approve a system password prompt when the tunnel starts.</span></li>
+        </ol>
+      </div>
+      <div class="panel" data-panel="android">
+        <ol>
+          <li><span>Download <b>hidenseek-vpn-android.apk</b> on your phone.</span></li>
+          <li><span>Open it. If Android asks, allow your browser to <b>install unknown apps</b>, then tap <b>Install</b>.</span></li>
+          <li><span>Open Hidenseek VPN, enter <span class="inline" data-host></span> and sign in.</span></li>
+          <li><span>Tap connect and accept Android's <b>VPN connection request</b> (only the first time).</span></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="wrap">
+    <div class="head reveal">
+      <div class="kicker">Privacy</div>
+      <h2>Straight answers about your data</h2>
+      <p class="sec-lead">A VPN moves trust from your ISP to the server's operator. Here is exactly what the operator of this server can and can't see.</p>
+    </div>
+    <div class="privacy">
+      <div class="card reveal">
+        <h3>Never visible</h3>
+        <ul class="no">
+          <li><svg><use href="#i-x"/></svg>Your private key. It never leaves your device.</li>
+          <li><svg><use href="#i-x"/></svg>The contents of HTTPS pages, messages, passwords or full URLs. They're encrypted end to end.</li>
+          <li><svg><use href="#i-x"/></svg>Anything you do while disconnected.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <h3>What the server records</h3>
+        <ul>
+          <li class="yes"><svg><use href="#i-check"/></svg>Your account email, device name, connection times and data used.</li>
+          <li class="yes"><svg><use href="#i-check"/></svg>The public IP you connected from and its approximate location.</li>
+          <li class="maybe"><svg><use href="#i-eye"/></svg><span>Domain names you look up, <b style="color:var(--text)">only</b> on servers with activity logging turned on. The app shows an eye icon and asks you first. Records are deleted after 30 days.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:20px">
+  <div class="wrap">
+    <div class="host reveal">
+      <div>
+        <h2>Run your own Hidenseek</h2>
+        <p>Got a VPS? Deploy the backend with Docker, add servers with one command, and invite your friends. Every location is a box you control.</p>
+      </div>
+      <div class="cta">
+        <a class="btn btn-ghost" href="https://github.com/tanmaysinghx/hidenseek-vpn/blob/main/docs/self-hosting.md" rel="noopener">Self-hosting guide</a>
+        <a class="btn btn-primary" href="https://github.com/tanmaysinghx/hidenseek-vpn" rel="noopener"><svg><use href="#i-github"/></svg>Star on GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="brand" style="font-size:14px"><img src="/logo.svg" alt="" style="width:22px;height:22px">Hidenseek VPN</span>
+    <span>MIT licensed · <a href="https://github.com/tanmaysinghx/hidenseek-vpn" rel="noopener">GitHub</a> · <a href="https://github.com/tanmaysinghx/hidenseek-vpn/releases" rel="noopener">Releases</a> · <a href="https://github.com/tanmaysinghx/hidenseek-vpn/blob/main/docs/self-hosting.md" rel="noopener">Docs</a></span>
+  </div>
+</footer>
+
 <script>
+(() => {
+  const REPO = "tanmaysinghx/hidenseek-vpn";
+  const LATEST = `https://github.com/${REPO}/releases/latest/download/`;
   const host = location.host;
-  document.getElementById("host").textContent = host;
-  document.getElementById("address").textContent = host;
-  document.getElementById("copy").addEventListener("click", async (e) => {
-    try { await navigator.clipboard.writeText(host); e.target.textContent = "Copied"; setTimeout(() => e.target.textContent = "Copy", 1500); } catch {}
-  });
-  const pill = document.getElementById("status");
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+
+  $$("[data-host]").forEach(el => el.textContent = host);
+
+  // Detect the visitor's platform to feature the right download.
+  const ua = navigator.userAgent.toLowerCase();
+  const platform = (navigator.userAgentData?.platform || navigator.platform || "").toLowerCase();
+  const os = /android/.test(ua) ? "android"
+    : /iphone|ipad|ipod/.test(ua) ? "ios"
+    : /win/.test(platform) || /windows/.test(ua) ? "windows"
+    : /mac/.test(platform) ? "mac"
+    : /linux|x11|cros/.test(platform + ua) ? "linux" : null;
+  const names = { windows: "Windows", linux: "Linux", android: "Android" };
+  const primaryAsset = { windows: "hidenseek-vpn-windows-x64-setup.exe", linux: "hidenseek-vpn-linux-amd64.deb", android: "hidenseek-vpn-android.apk" };
+
+  const heroBtn = $("#hero-dl"), heroNote = $("#hero-note");
+  if (names[os]) {
+    $(`.os[data-os="${os}"]`)?.classList.add("match");
+    heroBtn.querySelector("span").textContent = `Download for ${names[os]}`;
+    heroBtn.href = LATEST + primaryAsset[os];
+    heroNote.innerHTML = `Also on ${Object.keys(names).filter(k => k !== os).map(k => names[k]).join(" and ")} · <a href="#download">all downloads</a>`;
+    selectTab(os);
+  } else if (os === "ios" || os === "mac") {
+    heroNote.textContent = `${os === "ios" ? "iPhone and iPad" : "macOS"} support is on the roadmap. Available now for Windows, Linux and Android.`;
+  }
+
+  // Point every download at the latest release; fill in version and sizes when GitHub answers.
+  $$("[data-asset]").forEach(a => { a.href = LATEST + a.dataset.asset; a.rel = "noopener"; });
+  const meta = $("#release-meta");
+  fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: "application/vnd.github+json" } })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(rel => {
+      const assets = Object.fromEntries((rel.assets || []).map(a => [a.name, a]));
+      $$("[data-asset]").forEach(a => {
+        const asset = assets[a.dataset.asset];
+        const size = a.querySelector(".size");
+        if (asset && size) size.textContent = ` · ${(asset.size / 1048576).toFixed(0)} MB`;
+        if (!asset) { a.removeAttribute("href"); a.style.opacity = .45; a.style.pointerEvents = "none"; a.title = "Not in this release"; }
+      });
+      const date = new Date(rel.published_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+      meta.innerHTML = `Version <code>${rel.tag_name}</code> · released ${date} · <a href="${rel.html_url}" rel="noopener" style="color:var(--muted)">release notes & checksums</a>`;
+    })
+    .catch(() => {
+      meta.innerHTML = `The first release is being built. Check <a href="https://github.com/${REPO}/releases" rel="noopener" style="color:var(--muted)">GitHub Releases</a> in a few minutes.`;
+    });
+
+  // Server status from the backend's health endpoint.
   fetch("/actuator/health", { cache: "no-store" })
     .then(r => r.json())
-    .then(h => { const up = h.status === "UP"; pill.className = "pill " + (up ? "ok" : "bad"); pill.lastChild.textContent = up ? "Online" : "Degraded"; })
-    .catch(() => { pill.className = "pill bad"; pill.lastChild.textContent = "Unreachable"; });
+    .then(h => setStatus(h.status === "UP", h.status === "UP" ? `${host} is online` : `${host} is degraded`))
+    .catch(() => setStatus(false, `${host} is unreachable`));
+  function setStatus(up, text) {
+    $("#status-dot").className = "dot " + (up ? "on" : "off");
+    $("#status-text").textContent = text;
+  }
+
+  // Install guide tabs.
+  function selectTab(id) {
+    $$(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === id)));
+    $$(".panel").forEach(p => p.classList.toggle("active", p.dataset.panel === id));
+  }
+  $$(".tabs button").forEach(b => b.addEventListener("click", () => selectTab(b.dataset.tab)));
+
+  // Copy buttons in terminal snippets.
+  $$("[data-copy]").forEach(btn => btn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(btn.previousElementSibling.textContent);
+      btn.textContent = "Copied";
+      setTimeout(() => btn.textContent = "Copy", 1500);
+    } catch {}
+  }));
+
+  // Ticking clock in the app preview.
+  let t = 12 * 60 + 48;
+  const clock = $("#mock-clock"), pad = n => String(n).padStart(2, "0");
+  setInterval(() => { t++; clock.textContent = `${pad(Math.floor(t / 3600))}:${pad(Math.floor(t % 3600 / 60))}:${pad(t % 60)}`; }, 1000);
+
+  // Fade sections in as they scroll into view.
+  const io = "IntersectionObserver" in window ? new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+  }, { threshold: .12 }) : null;
+  $$(".reveal").forEach(el => io ? io.observe(el) : el.classList.add("in"));
+})();
 </script>
 </body>
 </html>
