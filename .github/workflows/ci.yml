@@ -413,6 +413,8 @@ jobs:
   # Stage 4 · Gate
   # ───────────────────────────────────────────────────────────────────────────────────────────────
 
+  # Android is advisory: a failed APK build is reported here but does not block the release, which
+  # then ships without the APK (the landing page greys out a missing download).
   ci-status:
     name: "Stage 4 · All checks passed"
     runs-on: ubuntu-latest
@@ -422,6 +424,7 @@ jobs:
       - name: Evaluate results
         env:
           RESULTS: ${{ toJSON(needs) }}
+          ADVISORY: android
         run: |
           echo "### Pipeline result" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -430,8 +433,18 @@ jobs:
           failed=0
           for job in $(echo "$RESULTS" | jq -r 'keys[]'); do
             result=$(echo "$RESULTS" | jq -r --arg j "$job" '.[$j].result')
-            case "$result" in success|skipped) ;; *) failed=1 ;; esac
-            echo "| $job | $result |" >> "$GITHUB_STEP_SUMMARY"
+            note=""
+            case "$result" in
+              success|skipped) ;;
+              *)
+                if [[ " $ADVISORY " == *" $job "* ]]; then
+                  note=" (advisory, not blocking)"
+                  echo "::warning::$job $result; the release will ship without it."
+                else
+                  failed=1
+                fi ;;
+            esac
+            echo "| $job | $result$note |" >> "$GITHUB_STEP_SUMMARY"
           done
           if [ "$failed" = "1" ]; then
             echo "::error::One or more pipeline jobs failed or were cancelled."
@@ -462,6 +475,12 @@ jobs:
         run: |
           mkdir -p release
           cp artifacts/app-*/* release/
+          if [ -f release/hidenseek-vpn-android.apk ]; then
+            echo "android_note=" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No Android APK in this release (the Android build failed)."
+            echo "android_note=> The Android APK is missing from this build; use the previous release for Android." >> "$GITHUB_OUTPUT"
+          fi
           cp artifacts/agent-binaries/* release/
           cp "$(find artifacts/backend-jar -name '*.jar' ! -name '*-plain.jar' | head -1)" release/hidenseek-backend.jar
           cd release
@@ -488,6 +507,8 @@ jobs:
           files: release/*
           body: |
             ## Hidenseek VPN ${{ steps.prep.outputs.tag }}
+
+            ${{ steps.prep.outputs.android_note }}
 
             Install the app, then enter your server address (for example `vpn.tanmaysinghx.com`) and sign in with Portal.
 
