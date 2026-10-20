@@ -18,7 +18,7 @@ const TONE = { APPROVED: 'green', PENDING: 'amber', SUSPENDED: 'red' } as const;
   imports: [RouterLink, FormsModule, ...UI, ...FORMAT_PIPES],
   template: `
     <div class="mb-6">
-      <h2 class="text-2xl font-bold tracking-tight">Users</h2>
+      <h2 class="text-xl font-semibold tracking-tight">Users</h2>
       <p class="mt-1 text-sm text-ink-400">Everyone who has signed in to the VPN with Portal. Approve people before they can connect.</p>
     </div>
 

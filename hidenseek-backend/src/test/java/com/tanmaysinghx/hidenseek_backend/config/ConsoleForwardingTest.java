@@ -33,6 +33,13 @@ class ConsoleForwardingTest {
     }
 
     @Test
+    void landingPageAndItsScreenshotsArePublic() throws Exception {
+        mvc.perform(get("/")).andExpect(status().isOk());
+        mvc.perform(get("/screens/android-connect.webp")).andExpect(status().isOk());
+        mvc.perform(get("/screens/desktop-connect.webp")).andExpect(status().isOk());
+    }
+
+    @Test
     void realFilesAreNotRewritten() throws Exception {
         mvc.perform(get("/console/index.html")).andExpect(status().isOk());
         mvc.perform(get("/console/missing-chunk.js")).andExpect(status().isNotFound());

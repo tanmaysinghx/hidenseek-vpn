@@ -22,7 +22,7 @@ const TONE: Record<PlanRequestStatus, 'amber' | 'green' | 'red' | 'gray'> = {
   imports: [FormsModule, ...UI, ...FORMAT_PIPES],
   template: `
     <div class="mb-6">
-      <h2 class="text-2xl font-bold tracking-tight">Plans</h2>
+      <h2 class="text-xl font-semibold tracking-tight">Plans</h2>
       <p class="mt-1 text-sm text-ink-400">Daily data allowances. People request an upgrade in the app; payment happens outside it, so approve once you've been paid.</p>
     </div>
     <hs-error [message]="error()" />
@@ -93,7 +93,7 @@ const TONE: Record<PlanRequestStatus, 'amber' | 'green' | 'red' | 'gray'> = {
                 <h4 class="font-semibold">{{ p.name }}</h4>
                 @if (p.isDefault) { <hs-badge>default</hs-badge> }
               </div>
-              <div class="mt-2 text-2xl font-bold tracking-tight">{{ p.dailyLimitBytes | allowance }}
+              <div class="mt-2 text-xl font-semibold tracking-tight">{{ p.dailyLimitBytes | allowance }}
                 @if (p.dailyLimitBytes !== null) { <span class="text-sm font-normal text-ink-400">/ day</span> }</div>
               <div class="text-xs text-ink-400">{{ p.priceLabel || 'No price shown' }}</div>
               @if (p.description) { <p class="mt-2 text-sm text-ink-300">{{ p.description }}</p> }

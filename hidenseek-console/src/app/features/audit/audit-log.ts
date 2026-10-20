@@ -18,7 +18,7 @@ const PAGE_SIZE = 50;
   template: `
     <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-2xl font-bold tracking-tight">Audit log</h2>
+        <h2 class="text-xl font-semibold tracking-tight">Audit log</h2>
         <p class="mt-1 text-sm text-ink-400">Who called the API, from where, and what happened. Changes, failures and refusals are always recorded.</p>
       </div>
       <div class="flex items-center gap-2">

@@ -3,7 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { PlaceStat } from '../../core/models';
-import { Chart } from '../../shared/chart';
+import { Chart, chartOf } from '../../shared/chart';
 import { FORMAT_PIPES, compact, countryName } from '../../shared/format';
 import { UI } from '../../shared/ui';
 import { rankedBars, requestsPerDay, visitsPerDay } from './charts';
@@ -69,7 +69,7 @@ const DEVICE_LABEL: Record<string, string> = { DESKTOP: 'Desktop', MOBILE: 'Phon
   template: `
     <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-2xl font-bold tracking-tight">Analytics</h2>
+        <h2 class="text-xl font-semibold tracking-tight">Analytics</h2>
         <p class="mt-1 text-sm text-ink-400">Visitors to this console and requests to the API, located with the server's GeoIP database.</p>
       </div>
       <div class="flex items-center gap-2">
@@ -329,10 +329,11 @@ export class AnalyticsPage {
   });
   private readonly system = rxResource({ stream: () => this.apiService.system() });
 
-  protected readonly visitsChart = computed(() => visitsPerDay(this.traffic.value()?.daily ?? []));
-  protected readonly requestsChart = computed(() => requestsPerDay(this.api.value()?.daily ?? []));
-  protected readonly sourcesChart = computed(() =>
-    rankedBars((this.traffic.value()?.sources ?? []).map((s) => ({
+  protected readonly visitsChart = chartOf(() => this.traffic.value()?.daily ?? [], visitsPerDay);
+  protected readonly requestsChart = chartOf(() => this.api.value()?.daily ?? [], requestsPerDay);
+  protected readonly sourcesChart = chartOf(
+    () => this.traffic.value()?.sources ?? [],
+    (sources) => rankedBars(sources.map((s) => ({
       label: s.source,
       value: s.visits,
       detail: `${s.visits} ${s.visits === 1 ? 'visit' : 'visits'} · ${s.visitors} ${s.visitors === 1 ? 'visitor' : 'visitors'}`,

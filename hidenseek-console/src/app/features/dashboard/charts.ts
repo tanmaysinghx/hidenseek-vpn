@@ -15,7 +15,7 @@ export function sessionsPerDay(points: DayPoint[]): ChartOption {
     tooltip: {
       ...(baseOption()['tooltip'] as object),
       trigger: 'axis',
-      axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(255,255,255,0.04)' } },
+      axisPointer: { type: 'shadow', shadowStyle: { color: VIZ.hover } },
       formatter: (items: { dataIndex: number }[]) => {
         const p = points[items[0].dataIndex];
         return `<b>${dayLabel(p.date)}</b><br/>${p.sessions} sessions · ${p.activeUsers} ${p.activeUsers === 1 ? 'person' : 'people'}`;
@@ -53,7 +53,7 @@ export function trafficPerDay(points: DayPoint[]): ChartOption {
     tooltip: {
       ...(baseOption()['tooltip'] as object),
       trigger: 'axis',
-      axisPointer: { type: 'line', lineStyle: { color: 'rgba(255,255,255,0.18)' } },
+      axisPointer: { type: 'line', lineStyle: { color: VIZ.crosshair } },
       formatter: (items: { dataIndex: number; marker: string; seriesName: string; value: number }[]) =>
         `<b>${dayLabel(points[items[0].dataIndex].date)}</b><br/>` +
         items.map((i) => `${i.marker} ${i.seriesName} <b>${bytes(i.value)}</b>`).join('<br/>'),

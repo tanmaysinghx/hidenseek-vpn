@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
-import { Chart } from '../../shared/chart';
+import { Chart, chartOf } from '../../shared/chart';
 import { FORMAT_PIPES, bytes, compact } from '../../shared/format';
 import { UI } from '../../shared/ui';
 import { sessionsPerDay, topWebsites, trafficPerDay } from './charts';
@@ -14,7 +14,7 @@ import { sessionsPerDay, topWebsites, trafficPerDay } from './charts';
   template: `
     <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-2xl font-bold tracking-tight">Overview</h2>
+        <h2 class="text-xl font-semibold tracking-tight">Overview</h2>
         <p class="mt-1 text-sm text-ink-400">Connections, data and websites across every server.</p>
       </div>
       <div class="flex items-center gap-2">
@@ -202,9 +202,9 @@ export class DashboardPage {
     stream: ({ params }) => this.api.dashboard(params.days),
   });
 
-  protected readonly sessionsChart = computed(() => sessionsPerDay(this.data.value()?.daily ?? []));
-  protected readonly trafficChart = computed(() => trafficPerDay(this.data.value()?.daily ?? []));
-  protected readonly websitesChart = computed(() => topWebsites(this.data.value()?.topDomains ?? []));
+  protected readonly sessionsChart = chartOf(() => this.data.value()?.daily ?? [], sessionsPerDay);
+  protected readonly trafficChart = chartOf(() => this.data.value()?.daily ?? [], trafficPerDay);
+  protected readonly websitesChart = chartOf(() => this.data.value()?.topDomains ?? [], topWebsites);
 
   protected readonly totalSessions = computed(() => compact((this.data.value()?.daily ?? []).reduce((n, p) => n + p.sessions, 0)));
   protected readonly totalData = computed(() =>

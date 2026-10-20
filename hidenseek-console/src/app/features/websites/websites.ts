@@ -3,7 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
-import { Chart } from '../../shared/chart';
+import { Chart, chartOf } from '../../shared/chart';
 import { FORMAT_PIPES } from '../../shared/format';
 import { UI } from '../../shared/ui';
 import { topWebsites } from '../dashboard/charts';
@@ -17,7 +17,7 @@ const PAGE = 100;
   template: `
     <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-2xl font-bold tracking-tight">Websites</h2>
+        <h2 class="text-xl font-semibold tracking-tight">Websites</h2>
         <p class="mt-1 max-w-2xl text-sm text-ink-400">Domains looked up through the VPN on servers with activity logging on.
           Page contents and full URLs are never visible; records are deleted after the retention period.</p>
       </div>
@@ -119,6 +119,6 @@ export class WebsitesPage {
     stream: ({ params }) => this.api.activity({ ...params, size: PAGE }),
   });
 
-  protected readonly chart = computed(() => topWebsites(this.top.value() ?? []));
+  protected readonly chart = chartOf(() => this.top.value() ?? [], topWebsites);
   protected readonly pages = computed(() => Math.max(1, Math.ceil((this.log.value()?.total ?? 0) / PAGE)));
 }

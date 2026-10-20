@@ -12,7 +12,7 @@ import { UI } from '../../shared/ui';
   imports: [...UI, ...FORMAT_PIPES],
   template: `
     <div class="mb-6">
-      <h2 class="text-2xl font-bold tracking-tight">Hi {{ user()?.displayName || user()?.email }}</h2>
+      <h2 class="text-xl font-semibold tracking-tight">Hi {{ user()?.displayName || user()?.email }}</h2>
       <p class="mt-1 text-sm text-ink-400">Your recent VPN connections. Connect from the Hidenseek app on your device.</p>
     </div>
     @if (user()?.status === 'PENDING') {

@@ -33,6 +33,36 @@
   }
 }
 
+/*
+ * Light theme: the same tokens, re-pointed. Utilities read these variables, so every page follows
+ * without per-template changes. "white" becomes slate, so white/5-style overlays (borders, hovers)
+ * turn into dark overlays on the light surface. Light text tones are darkened for contrast.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-ink-950: #ffffff;
+  --color-ink-900: #f4f6f9;
+  --color-ink-850: #ffffff;
+  --color-ink-800: #f1f4f8;
+  --color-ink-700: #e7ebf1;
+  --color-ink-600: #d5dbe4;
+  --color-ink-500: #94a3b8;
+  --color-ink-400: #64748b;
+  --color-ink-300: #475569;
+  --color-ink-200: #334155;
+  --color-ink-100: #0f172a;
+  --color-white: #0f172a;
+  --color-brand-300: #047857;
+  --color-brand-400: #059669;
+  --color-brand-500: #059669;
+  --color-rose-200: #9f1239;
+  --color-rose-300: #be123c;
+  --color-rose-400: #e11d48;
+  --color-amber-300: #b45309;
+  --color-sky-300: #0369a1;
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+
 @layer base {
   html, body { height: 100%; }
   body { @apply bg-ink-900 text-ink-100 antialiased font-sans; }
@@ -42,8 +72,9 @@
 }
 
 @utility card {
-  @apply rounded-2xl border border-white/5 bg-ink-850/80;
+  @apply rounded-xl border border-white/[0.07] bg-ink-850/80;
 }
+[data-theme="light"] .card { box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 1px rgb(15 23 42 / 0.02); }
 @utility card-title {
   @apply text-sm font-semibold text-ink-100;
 }
@@ -51,11 +82,13 @@
   @apply text-[11px] font-semibold uppercase tracking-wider text-ink-400;
 }
 @utility btn {
-  @apply inline-flex h-9 items-center justify-center gap-2 rounded-xl px-3.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility btn-primary {
   @apply btn bg-brand-500 text-ink-950 hover:bg-brand-400;
 }
+[data-theme="light"] .btn-primary { color: #fff; }
+[data-theme="light"] .btn-primary:hover { background: #047857; }
 @utility btn-secondary {
   @apply btn border border-white/5 bg-ink-700 text-ink-100 hover:bg-ink-600;
 }
@@ -66,12 +99,12 @@
   @apply btn border border-rose-500/20 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20;
 }
 @utility input {
-  @apply h-10 w-full rounded-xl border border-white/10 bg-ink-950/60 px-3 text-sm text-ink-100 outline-none placeholder:text-ink-400 focus:border-brand-400/60;
+  @apply h-10 w-full rounded-lg border border-white/10 bg-ink-950/60 px-3 text-sm text-ink-100 outline-none placeholder:text-ink-400 focus:border-brand-400/60;
 }
 @utility table-head {
-  @apply border-b border-white/5 text-left text-xs font-medium text-ink-400;
+  @apply border-b border-white/[0.07] bg-white/[0.015] text-left text-[11px] font-semibold uppercase tracking-wide text-ink-400;
 }
-.table-head th { @apply px-4 py-3 font-medium; }
+.table-head th { @apply px-4 py-2.5 font-semibold; }
 @utility table-row {
   @apply border-b border-white/5 last:border-0 hover:bg-white/[0.02];
 }

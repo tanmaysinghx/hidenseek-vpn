@@ -61,7 +61,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index.html", "/logo.svg", "/install.sh", "/console", "/console/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/logo.svg", "/install.sh", "/screens/**", "/console", "/console/**").permitAll()
                         .requestMatchers("/api/v1/public/**", "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()

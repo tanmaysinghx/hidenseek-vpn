@@ -28,7 +28,7 @@ const DESCRIPTION: Record<string, string> = {
   template: `
     <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-2xl font-bold tracking-tight">Control panel</h2>
+        <h2 class="text-xl font-semibold tracking-tight">Control panel</h2>
         <p class="mt-1 text-sm text-ink-400">What the server stores, how long it keeps it, and clean-up.</p>
       </div>
       <button class="btn-ghost px-2" title="Refresh" aria-label="Refresh" (click)="system.reload()"><hs-icon name="refresh" class="size-4" /></button>

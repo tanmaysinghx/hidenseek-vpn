@@ -14,7 +14,7 @@ import { UI } from '../../shared/ui';
   template: `
     <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-2xl font-bold tracking-tight">Servers</h2>
+        <h2 class="text-xl font-semibold tracking-tight">Servers</h2>
         <p class="mt-1 text-sm text-ink-400">Each VPS running the agent is a location people can connect to.</p>
       </div>
       <button class="btn-primary" (click)="adding.set(true)"><hs-icon name="plus" class="size-4" />Add server</button>

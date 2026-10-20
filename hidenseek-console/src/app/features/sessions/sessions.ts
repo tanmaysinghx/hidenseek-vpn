@@ -14,7 +14,7 @@ const PAGE = 50;
   template: `
     <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-2xl font-bold tracking-tight">Sessions</h2>
+        <h2 class="text-xl font-semibold tracking-tight">Sessions</h2>
         <p class="mt-1 text-sm text-ink-400">Every connection: who, from where, for how long and how much data.</p>
       </div>
       <div class="inline-flex gap-1 rounded-xl bg-ink-950/60 p-1 ring-1 ring-white/5" role="radiogroup" aria-label="Which sessions">

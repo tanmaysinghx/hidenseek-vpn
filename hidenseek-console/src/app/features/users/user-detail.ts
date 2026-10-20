@@ -3,7 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
-import { Chart } from '../../shared/chart';
+import { Chart, chartOf } from '../../shared/chart';
 import { FORMAT_PIPES, bytes, duration } from '../../shared/format';
 import { UI } from '../../shared/ui';
 import { topWebsites, trafficPerDay } from '../dashboard/charts';
@@ -28,7 +28,7 @@ const TONE = { APPROVED: 'green', PENDING: 'amber', SUSPENDED: 'red' } as const;
         <div class="flex items-center gap-4">
           <span class="grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-brand-400/40 to-sky-500/40 text-xl font-bold uppercase">{{ (d.user.displayName || d.user.email).charAt(0) }}</span>
           <div>
-            <h2 class="text-2xl font-bold tracking-tight">{{ d.user.displayName || d.user.email }}</h2>
+            <h2 class="text-xl font-semibold tracking-tight">{{ d.user.displayName || d.user.email }}</h2>
             <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-400">
               <span>{{ d.user.email }}</span>
               <hs-badge [tone]="tone[d.user.status]">{{ d.user.status.toLowerCase() }}</hs-badge>
@@ -170,8 +170,8 @@ export class UserDetailPage {
   });
 
   protected readonly pages = computed(() => Math.max(1, Math.ceil((this.activity.value()?.total ?? 0) / PAGE)));
-  protected readonly trafficChart = computed(() => trafficPerDay(this.insights.value()?.daily ?? []));
-  protected readonly websitesChart = computed(() => topWebsites(this.insights.value()?.topDomains ?? []));
+  protected readonly trafficChart = chartOf(() => this.insights.value()?.daily ?? [], trafficPerDay);
+  protected readonly websitesChart = chartOf(() => this.insights.value()?.topDomains ?? [], topWebsites);
   protected readonly connected = computed(() => duration(this.insights.value()?.connectedSeconds));
   protected readonly down = computed(() => bytes(this.insights.value()?.downloadBytes));
   protected readonly up = computed(() => bytes(this.insights.value()?.uploadBytes));
