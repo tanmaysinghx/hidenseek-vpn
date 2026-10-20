@@ -29,22 +29,40 @@ fn wireguard_dir() -> PathBuf {
     base.join("WireGuard")
 }
 
-/// Installs the bundled WireGuard MSI quietly if WireGuard isn't present.
-async fn ensure_wireguard() -> Result<()> {
+/// Strips the `\\?\` verbatim prefix Tauri's resource dir can carry: Rust's file APIs accept it, but
+/// msiexec can't open such a path and fails with 1619 (ERROR_INSTALL_PACKAGE_OPEN_FAILED).
+fn plain_path(path: &Path) -> String {
+    let s = path.to_string_lossy();
+    if let Some(unc) = s.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{unc}")
+    } else if let Some(local) = s.strip_prefix(r"\\?\") {
+        local.to_string()
+    } else {
+        s.into_owned()
+    }
+}
+
+/// Installs the bundled WireGuard MSI quietly if WireGuard isn't present. msiexec's verbose log is
+/// written to `dir` so a failed install can be diagnosed.
+async fn ensure_wireguard(dir: &Path) -> Result<()> {
     if wireguard_dir().join("wireguard.exe").exists() {
         return Ok(());
     }
     let msi = BUNDLED_MSI.get().filter(|p| p.exists()).ok_or_else(|| {
         Error::Tunnel("WireGuard is missing and this build has no bundled installer. Reinstall Hidenseek VPN.".into())
     })?;
+    let log = dir.join("wireguard-install.log");
     // DO_NOT_LAUNCH keeps WireGuard's own window from opening; the app manages tunnels itself.
     let status = Command::new("msiexec")
-        .args(["/i", &msi.to_string_lossy(), "/qn", "/norestart", "DO_NOT_LAUNCH=1"])
+        .args(["/i", &plain_path(msi), "/qn", "/norestart", "DO_NOT_LAUNCH=1", "/l*v", &plain_path(&log)])
         .creation_flags(CREATE_NO_WINDOW)
         .status()
         .await?;
     if !status.success() || !wireguard_dir().join("wireguard.exe").exists() {
-        return Err(Error::Tunnel(format!("Installing the WireGuard engine failed ({status})")));
+        return Err(Error::Tunnel(format!(
+            "Installing the WireGuard engine failed ({status}). Details: {}",
+            plain_path(&log)
+        )));
     }
     Ok(())
 }
@@ -63,7 +81,7 @@ async fn run(exe: &str, args: &[&str]) -> Result<String> {
 }
 
 pub async fn up(dir: &Path, config: &str) -> Result<()> {
-    ensure_wireguard().await?;
+    ensure_wireguard(dir).await?;
     if stats().await?.up {
         down(dir).await?;
     }
