@@ -279,7 +279,7 @@ jobs:
           curl -fsS http://localhost:8090/install.sh | head -1 | grep -q bash || { echo "::error::install.sh not served."; exit 1; }
           [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8090/api/v1/me)" = "401" ] \
             || { echo "::error::/api/v1/me must require a token."; exit 1; }
-          docker logs ci-app 2>&1 | grep -q 'Successfully applied 1 migration' \
+          docker logs ci-app 2>&1 | grep -Eq 'Successfully applied [0-9]+ migrations?' \
             || { echo "::error::Flyway did not migrate the schema."; docker logs ci-app; exit 1; }
 
           size=$(docker image inspect hidenseek-backend:ci --format '{{.Size}}' | awk '{printf "%.0f MB", $1/1024/1024}')
