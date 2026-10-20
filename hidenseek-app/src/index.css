@@ -1,23 +1,36 @@
 @import "tailwindcss";
+/* Lowest layer, so Tailwind size utilities win over flag-icons' own width. */
+@import "flag-icons/css/flag-icons.min.css" layer(base);
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
 
-  --color-ink-950: #070a10;
-  --color-ink-900: #0b0f17;
-  --color-ink-850: #0f1420;
-  --color-ink-800: #141a28;
-  --color-ink-700: #1d2536;
-  --color-ink-600: #2a3448;
-  --color-ink-400: #6b7a93;
-  --color-ink-300: #93a1b5;
-  --color-ink-100: #e6edf6;
+  /* Proton-style dark: charcoal with a violet cast, purple for actions, green only for "protected". */
+  --color-ink-950: #0e0d14;
+  --color-ink-900: #15141c;
+  --color-ink-850: #1c1b24;
+  --color-ink-800: #24222e;
+  --color-ink-700: #2e2b3a;
+  --color-ink-600: #3d3a4d;
+  --color-ink-400: #8b879d;
+  --color-ink-300: #b3afc3;
+  --color-ink-100: #f4f3f8;
 
-  --color-brand-300: #6ee7b7;
-  --color-brand-400: #34d399;
-  --color-brand-500: #10b981;
-  --color-sky-brand: #0ea5e9;
+  --color-brand-300: #b4a3ff;
+  --color-brand-400: #8b6dff;
+  --color-brand-500: #6d4aff;
+  --color-brand-600: #5a37e8;
+  --color-sky-brand: #3dc5ff;
+
+  --color-ok-300: #7af0c0;
+  --color-ok-400: #33d69b;
+  --color-ok-500: #1ea672;
+
+  /* World map */
+  --color-map-sea: #15141c;
+  --color-map-land: #2a2836;
+  --color-map-border: #3a374a;
 
   --animate-pulse-ring: pulse-ring 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   --animate-fade-in: fade-in 180ms ease-out;
@@ -26,6 +39,28 @@
   --animate-orbit: orbit 1.6s linear infinite;
   --animate-burst: burst 900ms ease-out forwards;
   --animate-shimmer: shimmer 2.2s linear infinite;
+  --animate-ping-slow: ping-slow 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-sheen: sheen 2.4s ease-in-out infinite;
+
+  --animate-route-draw: route-draw 1.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+  --animate-route-march: route-march 0.9s linear infinite;
+
+  /* Route paths use pathLength="1", so dash lengths are fractions of the route. */
+  @keyframes route-draw {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes route-march {
+    to { stroke-dashoffset: -0.04; }
+  }
+  @keyframes ping-slow {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(3.2); opacity: 0; }
+  }
+  @keyframes sheen {
+    0% { transform: translateX(-120%); }
+    60%, 100% { transform: translateX(220%); }
+  }
 
   @keyframes rise {
     from { opacity: 0; transform: translateY(14px) scale(0.98); }
@@ -71,7 +106,10 @@
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-white/5 bg-ink-850/80 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset];
+    @apply rounded-2xl border border-white/[0.06] bg-ink-850 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset];
+  }
+  .glass {
+    @apply border border-white/[0.08] bg-ink-850/75 shadow-[0_20px_60px_-25px_rgba(0,0,0,0.8)] backdrop-blur-xl;
   }
   .label {
     @apply text-xs font-medium uppercase tracking-wider text-ink-400;

@@ -51,7 +51,8 @@ public class GeoIpService {
 
     private static GeoLocation toLocation(CityResponse r) {
         return new GeoLocation(r.getCountry().getIsoCode(), r.getCountry().getName(),
-                r.getMostSpecificSubdivision().getName(), r.getCity().getName());
+                r.getMostSpecificSubdivision().getName(), r.getCity().getName(),
+                r.getLocation().getLatitude(), r.getLocation().getLongitude());
     }
 
     @PreDestroy

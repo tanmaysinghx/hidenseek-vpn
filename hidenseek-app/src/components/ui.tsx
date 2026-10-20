@@ -9,9 +9,9 @@ export function cx(...classes: (string | false | null | undefined)[]) {
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-brand-500 text-ink-950 hover:bg-brand-400 shadow-lg shadow-brand-500/20",
-  secondary: "bg-ink-700 text-ink-100 hover:bg-ink-600 border border-white/5",
-  ghost: "text-ink-300 hover:text-ink-100 hover:bg-white/5",
+  primary: "bg-brand-500 text-white hover:bg-brand-400 active:bg-brand-600 shadow-lg shadow-brand-500/25",
+  secondary: "bg-ink-700 text-ink-100 hover:bg-ink-600 border border-white/[0.06]",
+  ghost: "text-ink-300 hover:text-ink-100 hover:bg-white/[0.06]",
   danger: "bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 border border-rose-500/20",
 };
 
@@ -34,7 +34,7 @@ export function Button({
   return (
     <button
       className={cx(
-        "inline-flex items-center justify-center rounded-xl font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex items-center justify-center rounded-lg font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         variants[variant],
         sizes[size],
         className,
@@ -49,7 +49,8 @@ export function Button({
 }
 
 const tones = {
-  green: "bg-brand-500/10 text-brand-300 ring-brand-500/20",
+  green: "bg-ok-500/10 text-ok-300 ring-ok-500/25",
+  purple: "bg-brand-500/10 text-brand-300 ring-brand-500/25",
   amber: "bg-amber-500/10 text-amber-300 ring-amber-500/20",
   red: "bg-rose-500/10 text-rose-300 ring-rose-500/20",
   sky: "bg-sky-500/10 text-sky-300 ring-sky-500/20",
@@ -94,7 +95,7 @@ export function TextInput({ label, hint, className, ...props }: InputHTMLAttribu
     <label className={cx("block", className)}>
       {label && <span className="mb-1.5 block text-sm font-medium text-ink-300">{label}</span>}
       <input
-        className="h-11 w-full rounded-xl border border-white/10 bg-ink-950/60 px-3.5 text-sm text-ink-100 placeholder:text-ink-400 outline-none transition focus:border-brand-400/60 focus:ring-4 focus:ring-brand-400/10"
+        className="h-11 w-full rounded-lg border border-white/10 bg-ink-950/60 px-3.5 text-sm text-ink-100 placeholder:text-ink-400 outline-none transition focus:border-brand-400/60 focus:ring-4 focus:ring-brand-400/10"
         {...props}
       />
       {hint && <span className="mt-1.5 block text-xs text-ink-400">{hint}</span>}
@@ -129,10 +130,10 @@ export function CopyField({ value, mono = true }: { value: string; mono?: boolea
     window.setTimeout(() => setCopied(false), 1500);
   };
   return (
-    <div className="flex items-stretch overflow-hidden rounded-xl border border-white/10 bg-ink-950/70">
+    <div className="flex items-stretch overflow-hidden rounded-lg border border-white/10 bg-ink-950/70">
       <code className={cx("min-w-0 flex-1 overflow-x-auto whitespace-nowrap px-3.5 py-3 text-xs text-brand-300", mono && "font-mono")}>{value}</code>
       <button onClick={copy} className="flex shrink-0 items-center gap-1.5 border-l border-white/10 px-3 text-xs font-semibold text-ink-300 hover:bg-white/5 hover:text-ink-100">
-        {copied ? <Check className="size-4 text-brand-400" /> : <Copy className="size-4" />}
+        {copied ? <Check className="size-4 text-ok-400" /> : <Copy className="size-4" />}
         {copied ? "Copied" : "Copy"}
       </button>
     </div>
@@ -143,7 +144,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-[26px] font-bold tracking-tight">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-ink-400">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}

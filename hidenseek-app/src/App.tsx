@@ -74,7 +74,7 @@ export default function App() {
     const isAdmin = me.role === "ADMIN";
     screen = (
       <Shell route={route} onNavigate={setRoute} isAdmin={isAdmin} connected={connected}>
-        <div key={route} className="animate-rise">
+        <div key={route} className="h-full animate-rise">
           {route === "home" && <Home app={app} onConnectedChange={setConnected} />}
           {route === "history" && <HistoryPage />}
           {route === "devices" && <Devices currentDeviceId={app.deviceId} />}

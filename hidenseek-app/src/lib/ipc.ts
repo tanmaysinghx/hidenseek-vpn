@@ -10,8 +10,14 @@ export function toAppError(e: unknown): AppError {
   return { kind: "other", message: String(e) };
 }
 
+// Development only: `npm run dev`, then open /?mock to click through the UI in a plain browser.
+// The condition is false in production builds, so the mock is never bundled.
+const mock =
+  import.meta.env.DEV && new URLSearchParams(window.location.search).has("mock") ? import("./mock").then((m) => m.handle) : null;
+
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   try {
+    if (mock) return (await (await mock)(cmd, args)) as T;
     return await invoke<T>(cmd, args);
   } catch (e) {
     const err = toAppError(e);

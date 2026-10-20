@@ -186,6 +186,16 @@ class VpnFlowIntegrationTest {
     }
 
     @Test
+    void locationEchoesTheCallersIpEvenWithoutGeoIp() throws Exception {
+        mvc.perform(get("/api/v1/me/location").with(portalUser("friend@test.dev"))
+                        .with(request -> { request.setRemoteAddr("203.0.113.7"); return request; }))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ip").value("203.0.113.7"))
+                .andExpect(jsonPath("$.latitude").isEmpty());
+        mvc.perform(get("/api/v1/me/location")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void landingPageIsPublic() throws Exception {
         mvc.perform(get("/index.html")).andExpect(status().isOk());
         mvc.perform(get("/")).andExpect(status().isOk());
