@@ -3,7 +3,13 @@
 use crate::api::TunnelConfig;
 
 pub const INTERFACE: &str = "hidenseek";
+/// 1420 fits a 1500-byte link under WireGuard's overhead. Phones are often on smaller links (mobile
+/// data, IPv6-only carriers with 464XLAT, tethering), where 1420 silently drops full-size packets:
+/// DNS still works but TLS handshakes stall, so HTTPS fails. 1280 is what WireGuard's Android app uses.
+#[cfg(not(target_os = "android"))]
 const MTU: u16 = 1420;
+#[cfg(target_os = "android")]
+const MTU: u16 = 1280;
 
 pub fn render(tunnel: &TunnelConfig, private_key: &str) -> String {
     format!(
@@ -48,5 +54,6 @@ mod tests {
         let conf = render(&tunnel, "PRIVATE=");
         assert!(conf.contains("PrivateKey = PRIVATE=\nAddress = 10.66.0.2/32\nDNS = 10.66.0.1\n"));
         assert!(conf.contains("AllowedIPs = 0.0.0.0/0, ::/0\nEndpoint = sg1.example.com:51820\n"));
+        assert!(conf.contains(&format!("MTU = {MTU}\n")));
     }
 }
