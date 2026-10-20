@@ -34,6 +34,9 @@ public interface ActivityRepository extends JpaRepository<ActivityEvent, Long> {
             """)
     List<Object[]> topDomains(Instant since, String userId, Pageable pageable);
 
+    @Query("select min(a.occurredAt) from ActivityEvent a")
+    Instant oldest();
+
     @Query("select count(a) from ActivityEvent a where a.occurredAt > :since and (:userId is null or a.userId = :userId)")
     long countSince(Instant since, String userId);
 

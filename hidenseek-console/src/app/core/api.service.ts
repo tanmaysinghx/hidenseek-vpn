@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
-  ActivityEvent, AdminUser, Dashboard, DomainStat, Enrollment, MyPlan, Page, Plan, PlanRequest, Server, Session,
+  ActivityEvent, AdminUser, AuditFilter, AuditLog, AuditStats, DataSetId, Deleted, SystemInfo, TrafficStats, Dashboard, DomainStat, Enrollment, MyPlan, Page, Plan, PlanRequest, Server, Session,
   UserInsights, UserStatus,
 } from './models';
 
@@ -94,5 +94,27 @@ export class ApiService {
 
   enrollment(id: string) {
     return this.http.post<Enrollment>(`/api/v1/admin/nodes/${id}/enrollment`, null);
+  }
+
+  auditLogs(filter: AuditFilter) {
+    return this.http.get<Page<AuditLog>>('/api/v1/admin/audit-logs', { params: params({ ...filter }) });
+  }
+
+  auditStats(days: number) {
+    return this.http.get<AuditStats>('/api/v1/admin/audit-logs/stats', { params: params({ days }) });
+  }
+
+  trafficStats(days: number) {
+    return this.http.get<TrafficStats>('/api/v1/admin/traffic/stats', { params: params({ days }) });
+  }
+
+  system() {
+    return this.http.get<SystemInfo>('/api/v1/admin/system');
+  }
+
+  /** Deletes records of one kind from before {@code before} (yyyy-MM-dd). The server keeps today. */
+  purge(kind: DataSetId, before: string) {
+    const path = { audit: 'audit-logs', traffic: 'traffic-events', activity: 'activity' }[kind];
+    return this.http.delete<Deleted>(`/api/v1/admin/${path}`, { params: params({ before }) });
   }
 }

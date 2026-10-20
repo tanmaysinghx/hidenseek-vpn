@@ -37,6 +37,10 @@ public class GeoIpService {
         }
     }
 
+    public boolean enabled() {
+        return reader != null;
+    }
+
     public GeoLocation locate(String ip) {
         if (reader == null || ip == null) {
             return GeoLocation.UNKNOWN;

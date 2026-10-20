@@ -45,6 +45,21 @@ export const routes: Routes = [
         loadComponent: () => import('./features/websites/websites').then((m) => m.WebsitesPage),
       },
       {
+        path: 'analytics',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/analytics/analytics').then((m) => m.AnalyticsPage),
+      },
+      {
+        path: 'audit',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/audit/audit-log').then((m) => m.AuditLogPage),
+      },
+      {
+        path: 'control',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/control/control-panel').then((m) => m.ControlPanelPage),
+      },
+      {
         path: 'servers',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/servers/servers').then((m) => m.ServersPage),

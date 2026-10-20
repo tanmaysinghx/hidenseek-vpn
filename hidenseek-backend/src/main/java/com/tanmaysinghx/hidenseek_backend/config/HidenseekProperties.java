@@ -14,7 +14,8 @@ public record HidenseekProperties(
         Geoip geoip,
         Sessions sessions,
         Activity activity,
-        @DefaultValue Plans plans) {
+        @DefaultValue Plans plans,
+        @DefaultValue Audit audit) {
 
     public record Portal(String url, String clientId, String clientSecret, String appId, String apiKey) {
 
@@ -49,6 +50,13 @@ public record HidenseekProperties(
 
     /** Daily allowances reset at midnight in {@code timezone}. */
     public record Plans(@DefaultValue("Asia/Kolkata") String timezone) {
+    }
+
+    /**
+     * Request audit and console traffic analytics. {@code logReads}: also audit successful GETs
+     * outside the admin API (the apps poll, so this grows the table quickly).
+     */
+    public record Audit(@DefaultValue("90d") Duration retention, @DefaultValue("false") boolean logReads) {
     }
 
     public boolean isAdminEmail(String email) {

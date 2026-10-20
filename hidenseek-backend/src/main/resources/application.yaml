@@ -74,3 +74,8 @@ hidenseek:
   plans:
     # Daily data allowances reset at midnight here.
     timezone: ${PLANS_TIMEZONE:Asia/Kolkata}
+  audit:
+    # How long request audit logs and console traffic events are kept before being purged.
+    retention: ${AUDIT_RETENTION:90d}
+    # false = audit changes, failures and admin reads; true = every API request (the apps poll).
+    log-reads: ${AUDIT_LOG_READS:false}

@@ -221,3 +221,110 @@ export interface AdminUser extends User {
   planExpiresAt: string | null;
   usedTodayBytes: number;
 }
+
+// ---- Audit log, traffic analytics, control panel ----------------------------------------------
+
+export type AuditClient = 'APP' | 'WEB' | 'OTHER';
+
+export interface AuditLog {
+  id: number;
+  occurredAt: string;
+  userEmail: string | null;
+  method: string;
+  path: string;
+  route: string;
+  status: number;
+  durationMs: number;
+  client: AuditClient;
+  ip: string | null;
+  countryCode: string | null;
+  country: string | null;
+  region: string | null;
+  city: string | null;
+  referrer: string | null;
+  userAgent: string | null;
+}
+
+export interface AuditFilter {
+  days: number;
+  user?: string | null;
+  method?: string | null;
+  status?: string | null;
+  q?: string | null;
+  page?: number;
+  size?: number;
+}
+
+/** {@code uniques}: distinct IPs (audit) or visitors (traffic). */
+export interface PlaceStat {
+  code: string;
+  name: string | null;
+  countryCode: string | null;
+  requests: number;
+  uniques: number;
+}
+
+export interface AuditStats {
+  days: number;
+  requests: number;
+  failures: number;
+  uniqueIps: number;
+  uniqueUsers: number;
+  avgMs: number;
+  daily: { date: string; requests: number; failures: number }[];
+  statusClasses: Record<string, number>;
+  clients: Record<AuditClient, number>;
+  topRoutes: { method: string; route: string; requests: number; failures: number; avgMs: number }[];
+  topUsers: { email: string; requests: number; failures: number; lastSeen: string }[];
+  topIps: { ip: string; countryCode: string | null; region: string | null; requests: number; failures: number; lastSeen: string }[];
+  countries: PlaceStat[];
+  regions: PlaceStat[];
+}
+
+export interface TrafficDay {
+  date: string;
+  pageViews: number;
+  visitors: number;
+  visits: number;
+}
+
+export interface TrafficStats {
+  days: number;
+  pageViews: number;
+  visitors: number;
+  visits: number;
+  signedInUsers: number;
+  daily: TrafficDay[];
+  sources: { source: string; visits: number; visitors: number }[];
+  campaigns: { source: string | null; medium: string | null; campaign: string | null; visits: number }[];
+  landingPages: { path: string; views: number; visitors: number }[];
+  topPages: { path: string; views: number; visitors: number }[];
+  countries: PlaceStat[];
+  regions: PlaceStat[];
+  devices: Record<'DESKTOP' | 'MOBILE' | 'TABLET' | 'OTHER', number>;
+}
+
+export type DataSetId = 'audit' | 'traffic' | 'activity';
+
+export interface DataSet {
+  id: DataSetId;
+  label: string;
+  rows: number;
+  oldest: string | null;
+  retentionDays: number;
+}
+
+export interface SystemInfo {
+  geoipEnabled: boolean;
+  timezone: string;
+  auditLogReads: boolean;
+  data: DataSet[];
+  users: number;
+  nodes: number;
+  devices: number;
+}
+
+export interface Deleted {
+  deleted: number;
+  before: string;
+}

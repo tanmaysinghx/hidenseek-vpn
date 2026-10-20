@@ -18,6 +18,9 @@ const ADMIN_NAV: NavItem[] = [
   { path: '/sessions', label: 'Sessions', icon: 'activity' },
   { path: '/websites', label: 'Websites', icon: 'globe' },
   { path: '/servers', label: 'Servers', icon: 'server' },
+  { path: '/analytics', label: 'Analytics', icon: 'chart' },
+  { path: '/audit', label: 'Audit log', icon: 'list' },
+  { path: '/control', label: 'Control panel', icon: 'sliders' },
 ];
 const USER_NAV: NavItem[] = [{ path: '/me', label: 'My account', icon: 'user' }];
 

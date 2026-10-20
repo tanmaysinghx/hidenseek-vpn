@@ -3,6 +3,7 @@ package com.tanmaysinghx.hidenseek_backend.config;
 import com.nimbusds.jwt.JWTParser;
 import com.tanmaysinghx.hidenseek_backend.agent.AgentTokenFilter;
 import com.tanmaysinghx.hidenseek_backend.appauth.AppTokenService;
+import com.tanmaysinghx.hidenseek_backend.audit.AuditUserFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
@@ -66,6 +68,8 @@ public class SecurityConfig {
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(o -> o.authenticationManagerResolver(
                         tokenIssuers(portalDecoder, appTokens, jwtConverter(properties))))
+                // After authentication, before authorization: the audit log knows who was refused too.
+                .addFilterAfter(new AuditUserFilter(), BearerTokenAuthenticationFilter.class)
                 .build();
     }
 
