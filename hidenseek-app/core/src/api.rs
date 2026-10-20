@@ -8,7 +8,8 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::oidc::{self, PortalConfig};
+use crate::account;
+use crate::oidc::{self, PortalConfig, TokenKind};
 use crate::store::Store;
 use crate::{Error, Result};
 
@@ -132,7 +133,11 @@ impl Api {
             self.sign_out()?;
             return Err(Error::NotSignedIn);
         };
-        match oidc::refresh(&self.http, portal, oidc::endpoint_for(portal, api_url), refresh).await {
+        let fresh = match tokens.kind {
+            TokenKind::App => account::refresh(&self.http, api_url, refresh).await,
+            TokenKind::Portal => oidc::refresh(&self.http, portal, oidc::endpoint_for(portal, api_url), refresh).await,
+        };
+        match fresh {
             Ok(fresh) => {
                 let access = fresh.access_token.clone();
                 self.store.update(|s| s.tokens = Some(fresh))?;

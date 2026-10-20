@@ -3,8 +3,9 @@
 use serde::Serialize;
 use serde_json::json;
 
+use crate::account::{self, RegisterOutcome};
 use crate::api::{Api, DeviceView, TunnelConfig};
-use crate::oidc;
+use crate::oidc::{self, TokenKind};
 use crate::store::{DeviceIdentity, Store};
 use crate::{keys, wgconf, Error, Result};
 
@@ -61,7 +62,34 @@ pub async fn sign_in(api: &Api, store: &Store, open_browser: impl FnOnce(&str) -
     Ok(())
 }
 
-pub fn sign_out(store: &Store) -> Result<()> {
+pub async fn sign_in_password(api: &Api, store: &Store, email: &str, password: &str, device_name: &str) -> Result<()> {
+    let api_url = store.get().api_url.ok_or_else(|| Error::Config("choose a server first".into()))?;
+    let tokens = account::login(api.http(), &api_url, email, password, device_name).await?;
+    store.update(|s| s.tokens = Some(tokens))?;
+    Ok(())
+}
+
+pub async fn register(api: &Api, store: &Store, registration: account::Registration<'_>) -> Result<RegisterOutcome> {
+    let api_url = store.get().api_url.ok_or_else(|| Error::Config("choose a server first".into()))?;
+    match account::register(api.http(), &api_url, registration).await? {
+        Some(tokens) => {
+            store.update(|s| s.tokens = Some(tokens))?;
+            Ok(RegisterOutcome::SignedIn)
+        }
+        None => Ok(RegisterOutcome::Pending {
+            message: "Account created. It needs to be activated before you can sign in.".into(),
+        }),
+    }
+}
+
+/// Forgets the session, and for app sessions also revokes it on the server.
+pub async fn sign_out(api: &Api, store: &Store) -> Result<()> {
+    let state = store.get();
+    if let (Some(tokens), Some(api_url)) = (state.tokens, state.api_url) {
+        if let (TokenKind::App, Some(refresh)) = (tokens.kind, tokens.refresh_token) {
+            account::logout(api.http(), &api_url, &refresh).await;
+        }
+    }
     store.update(|s| s.tokens = None)?;
     Ok(())
 }

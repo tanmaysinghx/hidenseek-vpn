@@ -27,6 +27,9 @@ pub struct PortalConfig {
     /// The backend redeems codes and refresh tokens with the client secret (confidential client).
     #[serde(default)]
     pub token_broker: bool,
+    /// The backend offers email/password sign-in and registration (Portal's external API).
+    #[serde(default)]
+    pub password_login: bool,
 }
 
 /// Where tokens are redeemed: Portal directly (public client) or the backend's broker.
@@ -43,6 +46,19 @@ pub struct Tokens {
     pub id_token: Option<String>,
     /// Unix seconds.
     pub expires_at: u64,
+    /// Which sign-in produced these, and so where to refresh them.
+    #[serde(default)]
+    pub kind: TokenKind,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TokenKind {
+    /// Portal SSO through the browser (refreshed at Portal or the backend's broker).
+    #[default]
+    Portal,
+    /// Email and password in the app (refreshed at the backend's app-session endpoint).
+    App,
 }
 
 impl Tokens {
@@ -96,7 +112,7 @@ fn random_token(len: usize) -> Result<String> {
     Ok(URL_SAFE_NO_PAD.encode(bytes))
 }
 
-fn now() -> u64 {
+pub(crate) fn now() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
@@ -191,6 +207,7 @@ async fn token_request(request: reqwest::RequestBuilder) -> Result<Tokens> {
         refresh_token: body.refresh_token,
         id_token: body.id_token,
         expires_at: now() + body.expires_in.unwrap_or(900),
+        kind: TokenKind::Portal,
     })
 }
 
@@ -293,6 +310,7 @@ mod tests {
             client_id: "hidenseek-vpn".into(),
             scopes: "openid profile email".into(),
             token_broker: true,
+            password_login: false,
         };
         let http = reqwest::Client::new();
         // Plays the browser: Portal "approves" and redirects back to the loopback listener.

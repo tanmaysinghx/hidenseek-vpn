@@ -180,7 +180,8 @@ class VpnFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.portalUrl").value("https://sso.test"))
                 .andExpect(jsonPath("$.clientId").value("hidenseek-vpn"))
-                .andExpect(jsonPath("$.tokenBroker").value(true));
+                .andExpect(jsonPath("$.tokenBroker").value(true))
+                .andExpect(jsonPath("$.passwordLogin").value(true));
         mvc.perform(get("/api/v1/me")).andExpect(status().isUnauthorized());
     }
 

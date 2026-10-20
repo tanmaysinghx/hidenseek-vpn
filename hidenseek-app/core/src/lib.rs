@@ -2,6 +2,7 @@
 //! backend, managing the device's WireGuard key, and bringing the desktop tunnel up and down.
 //! It has no UI or Tauri dependency, so it can be tested on its own.
 
+pub mod account;
 pub mod api;
 pub mod client;
 pub mod error;

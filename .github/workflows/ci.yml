@@ -437,6 +437,8 @@ jobs:
           test -d "$NDK_HOME" || { echo "::error::NDK not found at $NDK_HOME"; exit 1; }
           npm ci
           npx tauri android init --ci
+          # Hidenseek icon (adaptive, dark tile) and a dark window/system splash instead of the defaults.
+          node scripts/android-postinit.mjs
           npx tauri android build --apk --target aarch64 --target armv7 --config "{\"version\":\"$APP_VERSION\"}"
 
       # Android only installs an update over an older version when both are signed with the same

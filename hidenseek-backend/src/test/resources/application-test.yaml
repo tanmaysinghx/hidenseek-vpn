@@ -17,5 +17,7 @@ hidenseek:
     url: https://sso.test
     client-id: hidenseek-vpn
     client-secret: test-secret
+    app-id: 00000000-0000-0000-0000-000000000001
+    api-key: psso_app_test
   access:
     admin-emails: admin@test.dev

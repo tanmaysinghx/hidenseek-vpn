@@ -1,5 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use hidenseek_core::account::{RegisterOutcome, Registration};
 use hidenseek_core::api::TunnelConfig;
 use hidenseek_core::client::{self, Platform};
 use hidenseek_core::tunnel::TunnelStats;
@@ -23,6 +24,10 @@ pub struct AppView {
     api_url: Option<String>,
     portal_url: Option<String>,
     signed_in: bool,
+    /// The server offers email/password sign-in and registration.
+    password_login: bool,
+    /// Browser sign-in through Portal is available (not offered on Android).
+    browser_login: bool,
     device_id: Option<String>,
     last_node_id: Option<String>,
     platform: Platform,
@@ -33,8 +38,10 @@ pub fn app_state(state: State<'_, AppState>) -> AppView {
     let s = state.store.get();
     AppView {
         api_url: s.api_url,
-        portal_url: s.portal.map(|p| p.portal_url),
+        portal_url: s.portal.as_ref().map(|p| p.portal_url.clone()),
         signed_in: s.tokens.is_some(),
+        password_login: s.portal.as_ref().is_some_and(|p| p.password_login),
+        browser_login: !cfg!(target_os = "android"),
         device_id: s.device.map(|d| d.id),
         last_node_id: s.last_node_id,
         platform: Platform::current(),
@@ -55,9 +62,33 @@ pub async fn sign_in(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
 }
 
 #[tauri::command]
+pub async fn sign_in_password(state: State<'_, AppState>, email: String, password: String) -> Result<()> {
+    client::sign_in_password(&state.api, &state.store, &email, &password, &device_name()).await
+}
+
+#[tauri::command]
+pub async fn register(
+    state: State<'_, AppState>,
+    email: String,
+    password: String,
+    first_name: String,
+    last_name: String,
+) -> Result<RegisterOutcome> {
+    let device = device_name();
+    let registration = Registration {
+        email: &email,
+        password: &password,
+        first_name: &first_name,
+        last_name: &last_name,
+        device_name: &device,
+    };
+    client::register(&state.api, &state.store, registration).await
+}
+
+#[tauri::command]
 pub async fn sign_out(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     let _ = disconnect(app, state.clone()).await;
-    client::sign_out(&state.store)
+    client::sign_out(&state.api, &state.store).await
 }
 
 /// Authenticated passthrough for view data (`/api/...` only).

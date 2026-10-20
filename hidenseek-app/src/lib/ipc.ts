@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppError, AppView, TunnelConfig, TunnelStatus } from "./types";
+import type { AppError, AppView, RegisterOutcome, TunnelConfig, TunnelStatus } from "./types";
 
 /** Normalizes anything thrown across the IPC boundary into an AppError. */
 export function toAppError(e: unknown): AppError {
@@ -24,6 +24,9 @@ export const ipc = {
   appState: () => call<AppView>("app_state"),
   setServer: (url: string) => call<void>("set_server", { url }),
   signIn: () => call<void>("sign_in"),
+  signInPassword: (email: string, password: string) => call<void>("sign_in_password", { email, password }),
+  register: (r: { email: string; password: string; firstName: string; lastName: string }) =>
+    call<RegisterOutcome>("register", r),
   signOut: () => call<void>("sign_out"),
   connect: (nodeId: string) => call<TunnelConfig>("connect", { nodeId }),
   disconnect: () => call<void>("disconnect"),

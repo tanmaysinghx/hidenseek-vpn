@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Shell, type Route } from "./components/Shell";
-import { Spinner } from "./components/ui";
+import { SPLASH_MS, Splash } from "./components/Splash";
 import { ipc, api } from "./lib/ipc";
 import type { AppView, User } from "./lib/types";
 import { Setup } from "./pages/Setup";
@@ -19,6 +19,8 @@ export default function App() {
   const [connected, setConnected] = useState(false);
   // Set when the user chose "Use a different server", so the baked-in server isn't reapplied.
   const [manualServer, setManualServer] = useState(false);
+  // The splash stays up for SPLASH_MS on every launch, then fades out over the loaded screen.
+  const [splash, setSplash] = useState<"showing" | "leaving" | "gone">("showing");
 
   const refresh = useCallback(async () => {
     const view = await ipc.appState();
@@ -42,29 +44,51 @@ export default function App() {
     return () => window.removeEventListener("hidenseek:signed-out", onSignedOut);
   }, [refresh]);
 
-  if (!app || (app.signedIn && !me)) {
-    return (
-      <div className="grid h-full place-items-center">
-        <Spinner className="size-7" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    const leave = setTimeout(() => setSplash("leaving"), SPLASH_MS);
+    const gone = setTimeout(() => setSplash("gone"), SPLASH_MS + 500);
+    return () => {
+      clearTimeout(leave);
+      clearTimeout(gone);
+    };
+  }, []);
+
+  const loading = !app || (app.signedIn && !me);
+  // Stays up past SPLASH_MS if loading is slow, so there's never a blank screen.
+  const splashScreen = (splash !== "gone" || loading) && <Splash leaving={splash !== "showing" && !loading} />;
+  if (loading || splash === "showing") return <>{splashScreen}</>;
+
   const changeServer = () => {
     setManualServer(true);
     setApp({ ...app, apiUrl: null });
   };
-  if (!app.apiUrl) return <Setup onDone={refresh} auto={!manualServer} />;
-  if (!app.signedIn || !me) return <SignIn app={app} onDone={refresh} onChangeServer={changeServer} />;
-  if (me.status !== "APPROVED") return <Pending me={me} onRefresh={refresh} />;
 
-  const isAdmin = me.role === "ADMIN";
+  let screen;
+  if (!app.apiUrl) {
+    screen = <Setup onDone={refresh} auto={!manualServer} />;
+  } else if (!app.signedIn || !me) {
+    screen = <SignIn app={app} onDone={refresh} onChangeServer={changeServer} />;
+  } else if (me.status !== "APPROVED") {
+    screen = <Pending me={me} onRefresh={refresh} />;
+  } else {
+    const isAdmin = me.role === "ADMIN";
+    screen = (
+      <Shell route={route} onNavigate={setRoute} isAdmin={isAdmin} connected={connected}>
+        <div key={route} className="animate-rise">
+          {route === "home" && <Home app={app} onConnectedChange={setConnected} />}
+          {route === "history" && <HistoryPage />}
+          {route === "devices" && <Devices currentDeviceId={app.deviceId} />}
+          {route === "admin" && isAdmin && <Admin me={me} />}
+          {route === "settings" && <SettingsPage app={app} me={me} onSignedOut={refresh} onChangeServer={changeServer} />}
+        </div>
+      </Shell>
+    );
+  }
+
   return (
-    <Shell route={route} onNavigate={setRoute} isAdmin={isAdmin} connected={connected}>
-      {route === "home" && <Home app={app} onConnectedChange={setConnected} />}
-      {route === "history" && <HistoryPage />}
-      {route === "devices" && <Devices currentDeviceId={app.deviceId} />}
-      {route === "admin" && isAdmin && <Admin me={me} />}
-      {route === "settings" && <SettingsPage app={app} me={me} onSignedOut={refresh} onChangeServer={changeServer} />}
-    </Shell>
+    <>
+      {splashScreen}
+      <div className="h-full">{screen}</div>
+    </>
   );
 }

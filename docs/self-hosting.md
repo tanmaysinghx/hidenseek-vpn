@@ -73,6 +73,8 @@ Put any reverse proxy with HTTPS in front of port 8090.
 | `PORTAL_URL` | | Portal issuer URL, no trailing slash. Must equal the `iss` in tokens |
 | `PORTAL_CLIENT_ID` | | The OAuth client from step 1. Tokens must have it in `aud` |
 | `PORTAL_CLIENT_SECRET` | empty | Enables the token broker (long-lived sign-in) |
+| `PORTAL_APP_ID`, `PORTAL_API_KEY` | empty | Portal external app credentials. With both set, the apps offer email/password sign-in and sign-up; the backend checks the password with Portal and issues its own 30-day rotating session |
+| `APP_TOKEN_SECRET` | derived | HMAC key for those app sessions. Derived from the Portal secrets when empty; set it to rotate on its own (signs every app session out) |
 | `ADMIN_EMAILS` | empty | Comma-separated admins, in addition to Portal `ROLE_ADMIN` users |
 | `AUTO_APPROVE_USERS` | `false` | Let anyone with a Portal account connect without approval |
 | `MAX_DEVICES_PER_USER` | `5` | |

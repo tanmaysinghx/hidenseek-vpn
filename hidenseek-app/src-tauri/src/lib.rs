@@ -35,6 +35,8 @@ pub fn run() {
             commands::app_state,
             commands::set_server,
             commands::sign_in,
+            commands::sign_in_password,
+            commands::register,
             commands::sign_out,
             commands::api,
             commands::connect,

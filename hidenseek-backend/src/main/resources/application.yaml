@@ -46,6 +46,16 @@ hidenseek:
     # tokens for the apps (Portal only issues refresh tokens to confidential clients), so the
     # secret never ships inside an app. Blank = public client, sign-in lasts one access token.
     client-secret: ${PORTAL_CLIENT_SECRET:}
+    # Portal's external login/register API, for email/password sign-in inside the apps.
+    # Both blank = the apps only offer browser sign-in.
+    app-id: ${PORTAL_APP_ID:}
+    api-key: ${PORTAL_API_KEY:}
+  app-tokens:
+    # HMAC key for the backend's own app access tokens. Blank = derived from the Portal secrets,
+    # which is stable across restarts; set it explicitly to rotate independently.
+    secret: ${APP_TOKEN_SECRET:}
+    access-ttl: 15m
+    refresh-ttl: 30d
   access:
     # Emails that are always admins, in addition to Portal users holding ROLE_ADMIN.
     admin-emails: ${ADMIN_EMAILS:}

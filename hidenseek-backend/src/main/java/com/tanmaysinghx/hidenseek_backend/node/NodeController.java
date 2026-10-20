@@ -23,12 +23,13 @@ public class NodeController {
      * Lets an app configure itself from just the backend URL. With {@code tokenBroker} the app sends
      * its authorization code to /api/v1/public/auth instead of Portal's token endpoint.
      */
-    public record PublicConfig(String name, String portalUrl, String clientId, String scopes, boolean tokenBroker) {
+    public record PublicConfig(String name, String portalUrl, String clientId, String scopes, boolean tokenBroker,
+                               boolean passwordLogin) {
     }
 
     @GetMapping("/api/v1/public/config")
     public PublicConfig publicConfig() {
         return new PublicConfig("Hidenseek VPN", properties.portal().url(), properties.portal().clientId(),
-                "openid profile email", properties.portal().brokersTokens());
+                "openid profile email", properties.portal().brokersTokens(), properties.portal().passwordLogin());
     }
 }

@@ -9,16 +9,26 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 public record HidenseekProperties(
         String publicUrl,
         Portal portal,
+        @DefaultValue AppTokens appTokens,
         Access access,
         Geoip geoip,
         Sessions sessions,
         Activity activity) {
 
-    public record Portal(String url, String clientId, String clientSecret) {
+    public record Portal(String url, String clientId, String clientSecret, String appId, String apiKey) {
 
         public boolean brokersTokens() {
             return clientSecret != null && !clientSecret.isBlank();
         }
+
+        /** Email/password sign-in through Portal's external login/register API is configured. */
+        public boolean passwordLogin() {
+            return appId != null && !appId.isBlank() && apiKey != null && !apiKey.isBlank();
+        }
+    }
+
+    public record AppTokens(String secret, @DefaultValue("15m") Duration accessTtl,
+                            @DefaultValue("30d") Duration refreshTtl) {
     }
 
     public record Access(

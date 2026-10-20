@@ -4,6 +4,8 @@ export interface AppView {
   apiUrl: string | null;
   portalUrl: string | null;
   signedIn: boolean;
+  passwordLogin: boolean;
+  browserLogin: boolean;
   deviceId: string | null;
   lastNodeId: string | null;
   platform: Platform;
@@ -129,3 +131,5 @@ export interface AppError {
   kind: "signedOut" | "api" | "network" | "tunnel" | "other";
   message: string;
 }
+
+export type RegisterOutcome = { outcome: "signedIn" } | { outcome: "pending"; message: string };
