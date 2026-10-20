@@ -445,6 +445,7 @@ dependencies = [
  "thiserror 2.0.21",
  "tokio",
  "url",
+ "webpki-root-certs",
  "x25519-dalek",
 ]
 

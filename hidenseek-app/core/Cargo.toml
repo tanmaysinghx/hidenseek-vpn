@@ -22,3 +22,8 @@ tokio = { version = "1.54.0", features = ["rt-multi-thread", "macros"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 defguard_wireguard_rs = "0.12.3"
+
+# Android: reqwest's default (rustls-platform-verifier) needs JNI setup the app doesn't do and
+# panics on the first HTTPS request, so Android checks certificates against Mozilla's roots instead.
+[target.'cfg(target_os = "android")'.dependencies]
+webpki-root-certs = "1"

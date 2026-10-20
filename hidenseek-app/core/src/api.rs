@@ -47,11 +47,18 @@ pub struct Api {
 
 impl Api {
     pub fn new(store: Arc<Store>) -> Self {
-        let http = reqwest::Client::builder()
+        let builder = reqwest::Client::builder()
             .timeout(Duration::from_secs(20))
-            .user_agent(concat!("hidenseek-app/", env!("CARGO_PKG_VERSION")))
-            .build()
-            .expect("HTTP client");
+            .user_agent(concat!("hidenseek-app/", env!("CARGO_PKG_VERSION")));
+        // The platform verifier needs JNI initialization on Android and panics without it; check
+        // against Mozilla's root store instead (tls_certs_only switches reqwest to rustls' WebPKI).
+        #[cfg(target_os = "android")]
+        let builder = builder.tls_certs_only(
+            webpki_root_certs::TLS_SERVER_ROOT_CERTS
+                .iter()
+                .filter_map(|der| reqwest::Certificate::from_der(der.as_ref()).ok()),
+        );
+        let http = builder.build().expect("HTTP client");
         Self { http, store }
     }
 

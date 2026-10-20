@@ -1,5 +1,5 @@
 import { Eye, EyeOff, ExternalLink, LogIn, MailCheck, UserPlus } from "lucide-react";
-import { useState, type FormEvent, type InputHTMLAttributes } from "react";
+import { useEffect, useRef, useState, type FormEvent, type InputHTMLAttributes } from "react";
 import { Button, ErrorNote, cx } from "../components/ui";
 import { useAction } from "../lib/hooks";
 import { ipc } from "../lib/ipc";
@@ -13,6 +13,15 @@ export function SignIn({ app, onDone, onChangeServer }: { app: AppView; onDone: 
   const [pendingNotice, setPendingNotice] = useState<string | null>(null);
   const browser = useAction();
   const host = (url: string | null) => (url ? new URL(url).host : "");
+
+  // The server's sign-in options are saved when it's first chosen; re-read them so a server that
+  // has since enabled email sign-in offers it (same URL, so nothing else is reset).
+  const rediscovered = useRef(false);
+  useEffect(() => {
+    if (rediscovered.current || !app.apiUrl) return;
+    rediscovered.current = true;
+    ipc.setServer(app.apiUrl).then(onDone, () => {});
+  }, [app.apiUrl, onDone]);
 
   const viaBrowser = async () => {
     const ok = await browser.run(async () => {
