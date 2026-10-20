@@ -1,4 +1,4 @@
-import { ChevronRight, Code2, LogOut, MapPin, Server, UserRound } from "lucide-react";
+import { ChevronRight, Code2, Info, LogOut, MapPin, Server, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { Flag } from "../components/Flag";
@@ -11,7 +11,9 @@ import type { AppView, User } from "../lib/types";
 
 export function SettingsPage({ app, me, onSignedOut, onChangeServer }: { app: AppView; me: User; onSignedOut: () => void; onChangeServer: () => void }) {
   const action = useAction();
-  const version = useResource(() => getVersion().catch(() => "dev"));
+  // CI builds with the release's version (0.1.<run>), so this matches the GitHub release tag v0.1.<run>.
+  const version = useResource(() => (import.meta.env.DEV ? Promise.resolve(null) : getVersion().then((v) => `v${v}`).catch(() => null)));
+  const versionLabel = version.data ?? "Development build";
   const signOut = async () => {
     await action.run(() => ipc.signOut());
     onSignedOut();
@@ -49,7 +51,6 @@ export function SettingsPage({ app, me, onSignedOut, onChangeServer }: { app: Ap
         <Group title="Server" icon={<Server className="size-4" />}>
           <Row label="Backend" value={<span className="font-mono text-xs">{app.apiUrl}</span>} />
           <Row label="Sign-in portal" value={<span className="font-mono text-xs">{app.portalUrl}</span>} />
-          <Row label="Platform" value={app.platform.charAt(0) + app.platform.slice(1).toLowerCase()} />
           <button onClick={onChangeServer} className="flex w-full items-center justify-between px-4 py-3.5 text-left text-sm font-medium text-brand-300 hover:bg-white/[0.03]">
             Use a different server
             <ChevronRight className="size-4" />
@@ -63,6 +64,11 @@ export function SettingsPage({ app, me, onSignedOut, onChangeServer }: { app: Ap
             Sign out
             <LogOut className="size-4" />
           </button>
+        </Group>
+
+        <Group title="About" icon={<Info className="size-4" />}>
+          <Row label="Version" value={<span className="font-mono text-xs">{version.loading ? "…" : versionLabel}</span>} />
+          <Row label="Platform" value={app.platform.charAt(0) + app.platform.slice(1).toLowerCase()} />
         </Group>
 
         <p className="flex items-center justify-center gap-1.5 pb-2 text-xs text-ink-400">

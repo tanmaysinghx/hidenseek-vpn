@@ -60,7 +60,7 @@ public class Node {
     @Column(nullable = false)
     private boolean enabled;
 
-    /** When true the node's resolver records DNS lookups; users are told before connecting. */
+    /** When true the node's resolver records DNS lookups. */
     @Column(nullable = false)
     private boolean activityLogging;
 

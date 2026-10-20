@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ChevronRight, Clock, Eye, Loader2, MapPin, Power, Search, ShieldAlert, ShieldCheck, Zap } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, Clock, Loader2, MapPin, Power, Search, ShieldAlert, ShieldCheck, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Flag } from "../components/Flag";
 import { UsageBar } from "../components/UsageBar";
@@ -9,16 +9,6 @@ import { distanceKm, resolveMyLocation, serverCoords, type MyLocation } from "..
 import { useAction, useNow, useResource } from "../lib/hooks";
 import { api, ipc } from "../lib/ipc";
 import type { AppView, MyPlan, Server, TunnelStatus } from "../lib/types";
-
-const ACK_KEY = "hidenseek.activityAck";
-
-function acknowledged(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(ACK_KEY) ?? "[]");
-  } catch {
-    return [];
-  }
-}
 
 function useMyLocation(connected: boolean) {
   const [location, setLocation] = useState<MyLocation | null>(null);
@@ -63,7 +53,6 @@ export function Home({ app, onConnectedChange, onOpenPlan }: { app: AppView; onC
   const [phase, setPhase] = useState<MapPhase | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(app.lastNodeId);
   const [query, setQuery] = useState("");
-  const [confirming, setConfirming] = useState<Server | null>(null);
   const now = useNow();
 
   const up = status.data?.up ?? false;
@@ -94,10 +83,6 @@ export function Home({ app, onConnectedChange, onOpenPlan }: { app: AppView; onC
   );
 
   const connect = async (server: Server) => {
-    if (server.activityLogging && !acknowledged().includes(server.id)) {
-      setConfirming(server);
-      return;
-    }
     setSelectedId(server.id);
     setPhase("connecting");
     await action.run(() => ipc.connect(server.id));
@@ -164,12 +149,6 @@ export function Home({ app, onConnectedChange, onOpenPlan }: { app: AppView; onC
           canConnect={Boolean(shown?.online)}
         />
         <div className="px-1 md:px-4">
-          {shown?.activityLogging && (
-            <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/[0.07] px-3 py-2.5 text-xs text-amber-200">
-              <Eye className="mt-0.5 size-4 shrink-0 text-amber-300" />
-              <span>This server logs the website domains you visit (via DNS). Its admin can see them. Page contents stay encrypted.</span>
-            </div>
-          )}
           {plan.data && <PlanStrip plan={plan.data} onOpen={onOpenPlan} />}
           <ErrorNote error={action.error} className="mt-3" />
         </div>
@@ -219,19 +198,6 @@ export function Home({ app, onConnectedChange, onOpenPlan }: { app: AppView; onC
           </div>
         </div>
       </aside>
-
-      {confirming && (
-        <ConfirmLogging
-          server={confirming}
-          onCancel={() => setConfirming(null)}
-          onAccept={() => {
-            localStorage.setItem(ACK_KEY, JSON.stringify([...acknowledged(), confirming.id]));
-            const server = confirming;
-            setConfirming(null);
-            void connect(server);
-          }}
-        />
-      )}
     </div>
   );
 
@@ -446,7 +412,6 @@ function ServerRow({
             {!server.online && " · Offline"}
           </span>
         </span>
-        {server.activityLogging && <Eye className="size-3.5 shrink-0 text-amber-300/80" aria-label="Logs activity" />}
       </button>
       {server.online && (
         <button
@@ -468,31 +433,5 @@ function ServerRow({
         </button>
       )}
     </li>
-  );
-}
-
-function ConfirmLogging({ server, onAccept, onCancel }: { server: Server; onAccept: () => void; onCancel: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in" onClick={onCancel}>
-      <div className="card w-full max-w-sm p-6 animate-rise" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 grid size-11 place-items-center rounded-xl bg-amber-500/10 text-amber-300">
-          <Eye className="size-5" />
-        </div>
-        <h3 className="text-lg font-semibold">This server logs activity</h3>
-        <p className="mt-2 text-sm leading-relaxed text-ink-300">
-          <span className="font-semibold text-ink-100">{server.name}</span> records the domain names you look up (for example
-          <span className="font-mono"> youtube.com</span>) along with your account. The server's admin can see this list. The
-          contents of encrypted (HTTPS) pages are not visible.
-        </p>
-        <div className="mt-6 flex gap-2">
-          <Button variant="ghost" className="flex-1" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button variant="primary" className="flex-1" onClick={onAccept}>
-            I understand
-          </Button>
-        </div>
-      </div>
-    </div>
   );
 }

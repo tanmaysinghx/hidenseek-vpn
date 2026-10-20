@@ -83,7 +83,7 @@ export function Servers() {
                 <Setting label="Enabled" hint="Disabled servers drop all peers and are hidden from users.">
                   <Toggle label="Enabled" checked={s.enabled} onChange={(v) => patch(s, { enabled: v })} />
                 </Setting>
-                <Setting label="Log activity" hint="Record DNS lookups (domains) per user. Users are warned before connecting.">
+                <Setting label="Log activity" hint="Record DNS lookups (domains) per user.">
                   <Toggle label="Log activity" checked={s.activityLogging} onChange={(v) => patch(s, { activityLogging: v })} />
                 </Setting>
               </div>

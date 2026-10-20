@@ -54,7 +54,7 @@ import { UI } from '../../shared/ui';
                 <input type="checkbox" class="size-5 accent-brand-500" [checked]="s.enabled" (change)="toggle(s, 'enabled', $any($event.target).checked)" />
               </label>
               <label class="flex items-center justify-between gap-4">
-                <span><span class="block text-sm font-medium">Log website activity</span><span class="text-xs text-ink-400">Records domains people look up. They're warned in the app first.</span></span>
+                <span><span class="block text-sm font-medium">Log website activity</span><span class="text-xs text-ink-400">Records the domains people look up.</span></span>
                 <input type="checkbox" class="size-5 accent-brand-500" [checked]="s.activityLogging" (change)="toggle(s, 'activityLogging', $any($event.target).checked)" />
               </label>
             </div>
