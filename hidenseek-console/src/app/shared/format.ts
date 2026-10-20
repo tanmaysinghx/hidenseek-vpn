@@ -8,6 +8,11 @@ export function bytes(n: number | null | undefined): string {
   return `${v >= 100 || i === 0 ? v.toFixed(0) : v.toFixed(1)} ${units[i]}`;
 }
 
+/** A plan's daily allowance: "2 GB", "Unlimited". */
+export function allowance(n: number | null | undefined): string {
+  return n === null || n === undefined ? 'Unlimited' : bytes(n).replace('.0 ', ' ');
+}
+
 export function duration(totalSeconds: number | null | undefined): string {
   const s = Math.max(0, Math.floor(totalSeconds ?? 0));
   const d = Math.floor(s / 86400);
@@ -77,4 +82,9 @@ export class CountryPipe implements PipeTransform {
   transform = countryName;
 }
 
-export const FORMAT_PIPES = [BytesPipe, DurationPipe, RelativePipe, DateTimePipe, CountryPipe] as const;
+@Pipe({ name: 'allowance' })
+export class AllowancePipe implements PipeTransform {
+  transform = allowance;
+}
+
+export const FORMAT_PIPES = [AllowancePipe, BytesPipe, DurationPipe, RelativePipe, DateTimePipe, CountryPipe] as const;

@@ -18,6 +18,27 @@ import { UI } from '../../shared/ui';
     @if (user()?.status === 'PENDING') {
       <div class="card mb-4 border-amber-500/20 bg-amber-500/[0.06] p-4 text-sm">Your account is waiting for an admin to approve it.</div>
     }
+    @if (plan.value(); as m) {
+      <div class="card mb-4 p-5" [class.border-rose-500/25]="m.usage.limited">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold">{{ m.plan.name }} plan</span>
+            <hs-badge tone="sky">{{ m.plan.dailyLimitBytes | allowance }}{{ m.plan.dailyLimitBytes === null ? '' : ' / day' }}</hs-badge>
+            @if (m.pendingRequest) { <hs-badge tone="amber">{{ m.pendingRequest.plan.name }} requested</hs-badge> }
+          </div>
+          <span class="text-xs text-ink-400">Change plan from the Hidenseek app</span>
+        </div>
+        <div class="mt-3 text-sm"><span class="font-semibold tabular-nums">{{ m.usage.usedBytes | bytes }}</span>
+          <span class="text-ink-400"> used today{{ m.usage.exempt || m.usage.limitBytes === null ? '' : ' of ' + (m.usage.limitBytes | allowance) }}</span></div>
+        @if (!m.usage.exempt && m.usage.limitBytes !== null) {
+          <div class="mt-2 h-2 overflow-hidden rounded-full bg-white/[0.07]">
+            <div class="h-full rounded-full" [class]="m.usage.limited ? 'bg-rose-400' : 'bg-brand-400'"
+              [style.width.%]="m.usage.usedBytes / m.usage.limitBytes * 100 > 100 ? 100 : m.usage.usedBytes / m.usage.limitBytes * 100"></div>
+          </div>
+        }
+        @if (m.usage.limited) { <p class="mt-2 text-sm text-rose-200">Today's allowance is used up, so the VPN is paused until midnight.</p> }
+      </div>
+    }
     <div class="card overflow-hidden">
       @if (sessions.isLoading() && !sessions.value()) {
         <hs-spinner />
@@ -48,4 +69,5 @@ export class MePage {
   private readonly api = inject(ApiService);
   protected readonly user = inject(AuthService).user;
   protected readonly sessions = rxResource({ stream: () => this.api.mySessions() });
+  protected readonly plan = rxResource({ stream: () => this.api.myPlan() });
 }

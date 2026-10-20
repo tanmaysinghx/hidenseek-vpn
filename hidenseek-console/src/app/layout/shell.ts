@@ -14,6 +14,7 @@ interface NavItem {
 const ADMIN_NAV: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { path: '/users', label: 'Users', icon: 'users' },
+  { path: '/plans', label: 'Plans', icon: 'gauge' },
   { path: '/sessions', label: 'Sessions', icon: 'activity' },
   { path: '/websites', label: 'Websites', icon: 'globe' },
   { path: '/servers', label: 'Servers', icon: 'server' },

@@ -13,7 +13,8 @@ public record HidenseekProperties(
         Access access,
         Geoip geoip,
         Sessions sessions,
-        Activity activity) {
+        Activity activity,
+        @DefaultValue Plans plans) {
 
     public record Portal(String url, String clientId, String clientSecret, String appId, String apiKey) {
 
@@ -44,6 +45,10 @@ public record HidenseekProperties(
     }
 
     public record Activity(@DefaultValue("30d") Duration retention) {
+    }
+
+    /** Daily allowances reset at midnight in {@code timezone}. */
+    public record Plans(@DefaultValue("Asia/Kolkata") String timezone) {
     }
 
     public boolean isAdminEmail(String email) {

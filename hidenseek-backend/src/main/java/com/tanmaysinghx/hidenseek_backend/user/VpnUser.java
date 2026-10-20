@@ -49,6 +49,12 @@ public class VpnUser {
 
     private Instant lastSeenAt;
 
+    /** Null = the default plan. */
+    private String planId;
+
+    /** When an admin-granted plan ends; null = no end. */
+    private Instant planExpiresAt;
+
     public boolean isAdmin() {
         return role == Role.ADMIN;
     }

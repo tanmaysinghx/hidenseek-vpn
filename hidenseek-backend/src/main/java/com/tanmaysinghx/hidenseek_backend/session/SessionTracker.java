@@ -7,7 +7,9 @@ import com.tanmaysinghx.hidenseek_backend.device.PeerRepository;
 import com.tanmaysinghx.hidenseek_backend.geo.GeoIpService;
 import com.tanmaysinghx.hidenseek_backend.geo.GeoLocation;
 import com.tanmaysinghx.hidenseek_backend.node.Node;
+import com.tanmaysinghx.hidenseek_backend.plan.PlanService;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -32,12 +34,14 @@ public class SessionTracker {
     private final VpnSessionRepository sessions;
     private final GeoIpService geoIp;
     private final HidenseekProperties properties;
+    private final PlanService planService;
 
     @Transactional
     public void record(Node node, List<PeerStat> stats, Instant now) {
         Map<String, Peer> byKey = peers.findAllWithDeviceByNodeId(node.getId()).stream()
                 .collect(Collectors.toMap(p -> p.getDevice().getPublicKey(), Function.identity()));
         Instant activeAfter = now.minus(properties.sessions().handshakeTimeout());
+        Map<String, Long> usage = new HashMap<>();
 
         for (PeerStat stat : stats) {
             Peer peer = byKey.get(stat.publicKey());
@@ -48,6 +52,7 @@ public class SessionTracker {
             long tx = delta(stat.txBytes(), peer.getLastTxBytes());
             peer.setLastRxBytes(stat.rxBytes());
             peer.setLastTxBytes(stat.txBytes());
+            usage.merge(peer.getDevice().getUser().getId(), rx + tx, Long::sum);
 
             boolean connected = stat.lastHandshake() != null && stat.lastHandshake().isAfter(activeAfter);
             VpnSession open = sessions.findFirstByPeerIdAndEndedAtIsNull(peer.getId()).orElse(null);
@@ -68,6 +73,7 @@ public class SessionTracker {
                 close(open, stat.lastHandshake() != null ? max(stat.lastHandshake(), open.getStartedAt()) : open.getLastSeenAt());
             }
         }
+        planService.record(usage);
     }
 
     /** Closes sessions whose node stopped reporting (agent down, VPS rebooted). */

@@ -9,9 +9,11 @@ import com.tanmaysinghx.hidenseek_backend.agent.AgentDtos.Report;
 import com.tanmaysinghx.hidenseek_backend.common.ApiException;
 import com.tanmaysinghx.hidenseek_backend.common.Ipv4Cidr;
 import com.tanmaysinghx.hidenseek_backend.common.WireGuardKeys;
+import com.tanmaysinghx.hidenseek_backend.device.Peer;
 import com.tanmaysinghx.hidenseek_backend.device.PeerRepository;
 import com.tanmaysinghx.hidenseek_backend.node.Node;
 import com.tanmaysinghx.hidenseek_backend.node.NodeService;
+import com.tanmaysinghx.hidenseek_backend.plan.PlanService;
 import com.tanmaysinghx.hidenseek_backend.session.SessionTracker;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -20,6 +22,7 @@ import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -41,6 +44,7 @@ public class AgentController {
     private final PeerRepository peers;
     private final SessionTracker sessionTracker;
     private final ActivityService activityService;
+    private final PlanService planService;
 
     @PostMapping("/enroll")
     public EnrollResponse enroll(@Valid @RequestBody EnrollRequest request, HttpServletRequest http) {
@@ -71,11 +75,13 @@ public class AgentController {
     @Transactional(readOnly = true)
     public NodeState state(@AuthenticationPrincipal NodePrincipal principal) {
         Node node = nodeService.get(principal.nodeId());
-        List<PeerSpec> specs = node.isEnabled()
-                ? peers.findAuthorizedByNodeId(node.getId()).stream()
-                        .map(p -> new PeerSpec(p.getDevice().getPublicKey(), List.of(p.getAddress() + "/32")))
-                        .toList()
-                : List.of();
+        List<Peer> authorized = node.isEnabled() ? peers.findAuthorizedByNodeId(node.getId()) : List.of();
+        // Users over today's allowance drop off every node until the daily reset.
+        Set<String> limited = planService.limitedUsers(authorized.stream().map(p -> p.getDevice().getUser()).toList());
+        List<PeerSpec> specs = authorized.stream()
+                .filter(p -> !limited.contains(p.getDevice().getUser().getId()))
+                .map(p -> new PeerSpec(p.getDevice().getPublicKey(), List.of(p.getAddress() + "/32")))
+                .toList();
         List<String> dns = Arrays.stream(node.getDns().split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
         return new NodeState(node.getId(), Ipv4Cidr.parse(node.getAddressCidr()).gatewayWithPrefix(),
                 node.getListenPort(), dns, node.isActivityLogging(), specs);

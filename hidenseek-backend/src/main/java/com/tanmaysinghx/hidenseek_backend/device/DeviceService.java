@@ -8,6 +8,7 @@ import com.tanmaysinghx.hidenseek_backend.device.DeviceDtos.RegisterDeviceReques
 import com.tanmaysinghx.hidenseek_backend.device.DeviceDtos.TunnelConfig;
 import com.tanmaysinghx.hidenseek_backend.node.Node;
 import com.tanmaysinghx.hidenseek_backend.node.NodeService;
+import com.tanmaysinghx.hidenseek_backend.plan.PlanService;
 import com.tanmaysinghx.hidenseek_backend.user.VpnUser;
 import java.time.Instant;
 import java.util.HashSet;
@@ -27,6 +28,7 @@ public class DeviceService {
     private final PeerRepository peers;
     private final NodeService nodeService;
     private final HidenseekProperties properties;
+    private final PlanService planService;
 
     public List<Device> list(VpnUser user) {
         return devices.findByUserIdAndRevokedAtIsNullOrderByCreatedAt(user.getId());
@@ -72,6 +74,7 @@ public class DeviceService {
                     ? "Your account is waiting for an admin to approve it"
                     : "Your VPN access is suspended");
         }
+        planService.requireAllowance(user);
         Device device = devices.findByIdAndUserId(deviceId, user.getId())
                 .filter(Device::isActive)
                 .orElseThrow(() -> ApiException.notFound("Device"));

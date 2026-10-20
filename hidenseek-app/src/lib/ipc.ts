@@ -39,7 +39,7 @@ export const ipc = {
   status: () => call<TunnelStatus>("tunnel_status"),
 };
 
-type Method = "GET" | "POST" | "PATCH" | "DELETE";
+type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 function request<T>(method: Method, path: string, body?: unknown) {
   return call<T>("api", { method, path, body: body ?? null });
@@ -48,6 +48,7 @@ function request<T>(method: Method, path: string, body?: unknown) {
 export const api = {
   get: <T>(path: string) => request<T>("GET", path),
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
+  put: <T>(path: string, body: unknown) => request<T>("PUT", path, body),
   patch: <T>(path: string, body: unknown) => request<T>("PATCH", path, body),
   del: (path: string) => request<null>("DELETE", path),
 };

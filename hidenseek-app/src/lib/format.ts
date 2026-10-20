@@ -56,3 +56,16 @@ export function countryName(code: string | null): string {
     return code;
   }
 }
+
+/** A plan's daily allowance: "2 GB", "Unlimited". */
+export function allowance(n: number | null): string {
+  if (n === null) return "Unlimited";
+  return bytes(n).replace(".0 ", " ");
+}
+
+/** "in 3h 20m" until an ISO time. */
+export function until(iso: string, now = Date.now()): string {
+  const mins = Math.max(0, Math.round((new Date(iso).getTime() - now) / 60000));
+  if (mins < 60) return `in ${mins}m`;
+  return `in ${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, "0")}m`;
+}

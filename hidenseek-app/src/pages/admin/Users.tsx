@@ -1,22 +1,31 @@
 import { Ban, Check, Users as UsersIcon } from "lucide-react";
 import { useState } from "react";
 import { Badge, Button, EmptyState, ErrorNote, Spinner, cx } from "../../components/ui";
-import { relative } from "../../lib/format";
+import { allowance, bytes, relative } from "../../lib/format";
 import { useAction, useResource } from "../../lib/hooks";
 import { api } from "../../lib/ipc";
-import type { User, UserStatus } from "../../lib/types";
+import type { AdminUser, Plan, User, UserStatus } from "../../lib/types";
 
 const statusTone = { APPROVED: "green", PENDING: "amber", SUSPENDED: "red" } as const;
 const filters = ["ALL", "PENDING", "APPROVED", "SUSPENDED"] as const;
 
 export function Users({ me }: { me: User }) {
-  const users = useResource(() => api.get<User[]>("/api/v1/admin/users"));
+  const users = useResource(() => api.get<AdminUser[]>("/api/v1/admin/users"));
+  const plans = useResource(() => api.get<Plan[]>("/api/v1/admin/plans"));
   const action = useAction();
   const [filter, setFilter] = useState<(typeof filters)[number]>("ALL");
 
-  const setStatus = async (user: User, status: UserStatus) => {
-    const updated = await action.run(() => api.patch<User>(`/api/v1/admin/users/${user.id}`, { status }));
-    if (updated) users.setData((list) => list?.map((u) => (u.id === updated.id ? updated : u)) ?? null);
+  const replace = (updated: AdminUser) => users.setData((list) => list?.map((u) => (u.id === updated.id ? updated : u)) ?? null);
+
+  const setStatus = async (user: AdminUser, status: UserStatus) => {
+    const updated = await action.run(() => api.patch<AdminUser>(`/api/v1/admin/users/${user.id}`, { status }));
+    if (updated) replace(updated);
+  };
+
+  // Set from here, a plan has no end date; time-limited plans come from approving a request.
+  const setPlan = async (user: AdminUser, planId: string) => {
+    const updated = await action.run(() => api.put<AdminUser>(`/api/v1/admin/users/${user.id}/plan`, { planId, days: null }));
+    if (updated) replace(updated);
   };
 
   const list = (users.data ?? []).filter((u) => filter === "ALL" || u.status === filter);
@@ -62,7 +71,25 @@ export function Users({ me }: { me: User }) {
                   <div className="truncate text-xs text-ink-400">
                     {u.email} · seen {relative(u.lastSeenAt)}
                   </div>
+                  <div className="mt-1 text-xs text-ink-400">
+                    <span className={cx("tabular-nums", u.role !== "ADMIN" && u.dailyLimitBytes !== null && u.usedTodayBytes >= u.dailyLimitBytes && "font-semibold text-rose-300")}>
+                      {bytes(u.usedTodayBytes)}
+                    </span>
+                    {" "}of {u.role === "ADMIN" ? "unlimited (admin)" : allowance(u.dailyLimitBytes)} today
+                    {u.planExpiresAt && <> · {u.planName} until {new Date(u.planExpiresAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</>}
+                  </div>
                 </div>
+                <select
+                  value={u.planId}
+                  onChange={(e) => void setPlan(u, e.target.value)}
+                  disabled={action.pending || !plans.data}
+                  aria-label={`Plan for ${u.displayName ?? u.email}`}
+                  className="h-8 rounded-lg border border-white/10 bg-ink-950/60 px-2 text-xs font-semibold text-ink-100 outline-none focus:border-brand-400/60"
+                >
+                  {(plans.data ?? [{ id: u.planId, name: u.planName } as Plan]).map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
                 {u.id !== me.id && (
                   <div className="flex gap-2">
                     {u.status !== "APPROVED" && (

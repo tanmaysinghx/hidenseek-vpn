@@ -1,7 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
-  ActivityEvent, Dashboard, DomainStat, Enrollment, Page, Server, Session, User, UserInsights, UserStatus,
+  ActivityEvent, AdminUser, Dashboard, DomainStat, Enrollment, MyPlan, Page, Plan, PlanRequest, Server, Session,
+  UserInsights, UserStatus,
 } from './models';
 
 type Params = Record<string, string | number | boolean | null | undefined>;
@@ -35,11 +36,36 @@ export class ApiService {
   }
 
   users() {
-    return this.http.get<User[]>('/api/v1/admin/users');
+    return this.http.get<AdminUser[]>('/api/v1/admin/users');
   }
 
   setUserStatus(id: string, status: UserStatus) {
-    return this.http.patch<User>(`/api/v1/admin/users/${id}`, { status });
+    return this.http.patch<AdminUser>(`/api/v1/admin/users/${id}`, { status });
+  }
+
+  /** {@code days} null = no end date. */
+  setUserPlan(id: string, planId: string, days: number | null = null) {
+    return this.http.put<AdminUser>(`/api/v1/admin/users/${id}/plan`, { planId, days });
+  }
+
+  plans() {
+    return this.http.get<Plan[]>('/api/v1/admin/plans');
+  }
+
+  updatePlan(id: string, body: Pick<Plan, 'name' | 'description' | 'dailyLimitBytes' | 'priceLabel'>) {
+    return this.http.put<Plan>(`/api/v1/admin/plans/${id}`, body);
+  }
+
+  planRequests(pending: boolean) {
+    return this.http.get<PlanRequest[]>('/api/v1/admin/plan-requests', { params: params({ pending }) });
+  }
+
+  decidePlanRequest(id: string, verb: 'approve' | 'reject', days: number | null, note: string | null) {
+    return this.http.post<PlanRequest>(`/api/v1/admin/plan-requests/${id}/${verb}`, { days, note });
+  }
+
+  myPlan() {
+    return this.http.get<MyPlan>('/api/v1/me/plan');
   }
 
   sessions(filter: { userId?: string | null; active?: boolean; page?: number; size?: number }) {

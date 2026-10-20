@@ -1,13 +1,14 @@
-import { Globe2, History, MonitorSmartphone, Settings, ShieldCheck } from "lucide-react";
+import { Gauge, Globe2, History, MonitorSmartphone, Settings, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { cx } from "./ui";
 
-export type Route = "home" | "history" | "devices" | "admin" | "settings";
+export type Route = "home" | "history" | "devices" | "plan" | "admin" | "settings";
 
 const items: { id: Route; label: string; icon: typeof Globe2; admin?: boolean }[] = [
   { id: "home", label: "Connect", icon: Globe2 },
   { id: "history", label: "History", icon: History },
   { id: "devices", label: "Devices", icon: MonitorSmartphone },
+  { id: "plan", label: "Plan", icon: Gauge },
   { id: "admin", label: "Admin", icon: ShieldCheck, admin: true },
   { id: "settings", label: "Settings", icon: Settings },
 ];

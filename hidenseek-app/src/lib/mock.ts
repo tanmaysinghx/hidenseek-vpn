@@ -1,6 +1,6 @@
 // Fake backend and tunnel for `npm run dev` in a plain browser (/?mock). Never shipped: ipc.ts only
 // imports it in development. `?mock=on`, `?mock=connecting` or `?mock=signin` start in that state.
-import type { AdminServer, AppView, Device, Page, Server, Session, Stats, TunnelStatus, User } from "./types";
+import type { AdminServer, AdminUser, AppView, Device, MyPlan, Page, Plan, PlanRequest, Server, Session, Stats, TunnelStatus, User } from "./types";
 
 const start = new URLSearchParams(window.location.search).get("mock") ?? "";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -93,9 +93,69 @@ const adminServers: AdminServer[] = servers.map((s, i) => ({
 
 const page = <T,>(items: T[]): Page<T> => ({ items, page: 0, size: 50, total: items.length });
 
-function api(method: string, path: string): unknown {
+const GB = 1024 ** 3;
+const plans: Plan[] = [
+  { id: "free", code: "FREE", name: "Free", description: "For light browsing and messaging.", dailyLimitBytes: 2 * GB, priceLabel: "Free", isDefault: true },
+  { id: "plus", code: "PLUS", name: "Plus", description: "Streaming and video calls every day.", dailyLimitBytes: 20 * GB, priceLabel: "₹99 / month", isDefault: false },
+  { id: "pro", code: "PRO", name: "Pro", description: "No daily limit.", dailyLimitBytes: null, priceLabel: "₹249 / month", isDefault: false },
+];
+// `?mock=limited` starts with today's Free allowance used up.
+let myPlanId = "free";
+let pendingPlan: PlanRequest | null = null;
+
+function myPlan(): MyPlan {
+  const plan = plans.find((p) => p.id === myPlanId)!;
+  const usedBytes = start === "limited" ? 2 * GB : Math.round(GB * 1.35 + (up ? rx + tx : 0));
+  const resetsAt = new Date(new Date().setHours(24, 0, 0, 0)).toISOString();
+  const limited = plan.dailyLimitBytes !== null && usedBytes >= plan.dailyLimitBytes;
+  return { plan, expiresAt: null, usage: { usedBytes, limitBytes: plan.dailyLimitBytes, resetsAt, limited, exempt: false }, pendingRequest: pendingPlan };
+}
+
+const planRequest = (user: User, plan: Plan, note: string | null): PlanRequest => ({
+  id: `r-${user.id}-${plan.id}`, userId: user.id, userEmail: user.email, userName: user.displayName, plan, status: "PENDING",
+  note, createdAt: new Date(Date.now() - 3_600_000).toISOString(), decidedAt: null, decidedBy: null, decisionNote: null,
+});
+
+const adminUser = (u: User, planId: string, usedTodayBytes: number): AdminUser => {
+  const plan = plans.find((p) => p.id === planId)!;
+  return { ...u, planId, planName: plan.name, dailyLimitBytes: plan.dailyLimitBytes, planExpiresAt: null, usedTodayBytes };
+};
+const friend: User = { ...me, id: "u2", email: "friend@example.com", displayName: "A friend", role: "USER", status: "APPROVED" };
+let requests: PlanRequest[] = [planRequest(friend, plans[1], "Paid via UPI, ref 4821")];
+
+function api(method: string, path: string, body: Record<string, unknown> | null): unknown {
   const p = path.split("?")[0];
   if (p === "/api/v1/me") return me;
+  if (p === "/api/v1/plans" || (p === "/api/v1/admin/plans" && method === "GET")) return plans;
+  if (p === "/api/v1/me/plan") return myPlan();
+  if (p === "/api/v1/me/plan-requests") {
+    const plan = plans.find((x) => x.id === body?.planId)!;
+    if (plan.isDefault) {
+      myPlanId = plan.id;
+      pendingPlan = null;
+    } else {
+      pendingPlan = { ...planRequest(me, plan, (body?.note as string) ?? null), createdAt: new Date().toISOString() };
+    }
+    return myPlan();
+  }
+  if (p === "/api/v1/me/plan-requests/pending") {
+    pendingPlan = null;
+    return null;
+  }
+  if (p.startsWith("/api/v1/admin/plans/")) {
+    const plan = plans.find((x) => x.id === p.split("/").pop())!;
+    Object.assign(plan, body);
+    return plan;
+  }
+  if (p === "/api/v1/admin/plan-requests") return path.includes("pending=false") ? requests : requests.filter((r) => r.status === "PENDING");
+  if (p.startsWith("/api/v1/admin/plan-requests/")) {
+    const [, , , , , id, verb] = p.split("/");
+    const r = requests.find((x) => x.id === id)!;
+    const decided: PlanRequest = { ...r, status: verb === "approve" ? "APPROVED" : "REJECTED", decidedAt: new Date().toISOString(), decidedBy: me.email, decisionNote: (body?.note as string) ?? null };
+    requests = requests.map((x) => (x.id === id ? decided : x));
+    return decided;
+  }
+  if (/^\/api\/v1\/admin\/users\/[^/]+\/plan$/.test(p)) return adminUser(p.includes("u2") ? friend : me, String(body?.planId), 0);
   if (p === "/api/v1/me/location")
     return { ip: up ? "139.59.220.11" : "49.36.112.20", countryCode: "IN", country: "India", region: "Uttar Pradesh", city: "Lucknow", latitude: 26.85, longitude: 80.95 };
   if (p === "/api/v1/nodes") return servers;
@@ -105,7 +165,7 @@ function api(method: string, path: string): unknown {
     return { users: 12, pendingUsers: 2, nodes: 6, onlineNodes: 5, activeSessions: 4, sessionsLast24h: 31, bytesLast24h: 18_400_000_000 } satisfies Stats;
   if (p === "/api/v1/admin/nodes") return adminServers;
   if (p === "/api/v1/admin/users")
-    return [me, { ...me, id: "u2", email: "friend@example.com", displayName: "A friend", role: "USER", status: "PENDING" }];
+    return [adminUser(me, "pro", 5.2 * GB), adminUser(friend, "free", 2 * GB), adminUser({ ...friend, id: "u3", email: "new@example.com", displayName: null, status: "PENDING" }, "free", 0)];
   if (p === "/api/v1/admin/sessions") return page(sessions);
   if (p === "/api/v1/admin/activity") return page([]);
   throw { kind: "api", message: `mock: no handler for ${method} ${p}` };
@@ -147,7 +207,7 @@ export async function handle(cmd: string, args?: Record<string, unknown>): Promi
       signedIn = false;
       return null;
     case "api":
-      return api(String(args?.method), String(args?.path));
+      return api(String(args?.method), String(args?.path), (args?.body as Record<string, unknown> | null) ?? null);
     default:
       return null;
   }

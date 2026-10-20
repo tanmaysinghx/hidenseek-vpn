@@ -2,10 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSign
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
-import { User, UserStatus } from '../../core/models';
+import { AdminUser, UserStatus } from '../../core/models';
 import { FORMAT_PIPES } from '../../shared/format';
 import { UI } from '../../shared/ui';
 
@@ -46,8 +46,8 @@ const TONE = { APPROVED: 'green', PENDING: 'amber', SUSPENDED: 'red' } as const;
         <hs-empty icon="users" title="Nobody here">People appear after they sign in to a Hidenseek app.</hs-empty>
       } @else {
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[680px] text-sm">
-            <thead class="table-head"><tr><th>Person</th><th>Status</th><th>Joined</th><th>Last seen</th><th class="!text-right">Access</th></tr></thead>
+          <table class="w-full min-w-[820px] text-sm">
+            <thead class="table-head"><tr><th>Person</th><th>Status</th><th>Plan</th><th>Today</th><th>Last seen</th><th class="!text-right">Access</th></tr></thead>
             <tbody>
               @for (u of shown(); track u.id) {
                 <tr class="table-row">
@@ -60,7 +60,18 @@ const TONE = { APPROVED: 'green', PENDING: 'amber', SUSPENDED: 'red' } as const;
                   </td>
                   <td><div class="flex gap-1.5"><hs-badge [tone]="tone[u.status]">{{ u.status.toLowerCase() }}</hs-badge>
                     @if (u.role === 'ADMIN') { <hs-badge tone="sky">admin</hs-badge> }</div></td>
-                  <td class="text-ink-300">{{ u.createdAt | relative }}</td>
+                  <td>
+                    <select class="h-8 rounded-lg border border-white/10 bg-ink-950/60 px-2 text-xs font-semibold text-ink-100 outline-none focus:border-brand-400/60"
+                      [attr.aria-label]="'Plan for ' + (u.displayName || u.email)" [disabled]="busy() === u.id || !plans.value()"
+                      [ngModel]="u.planId" (ngModelChange)="setPlan(u, $event)">
+                      @for (p of plans.value() ?? [{ id: u.planId, name: u.planName }]; track p.id) { <option [value]="p.id">{{ p.name }}</option> }
+                    </select>
+                    @if (u.planExpiresAt) { <div class="mt-1 text-[11px] text-ink-400">until {{ u.planExpiresAt | dateTime }}</div> }
+                  </td>
+                  <td class="whitespace-nowrap text-xs tabular-nums">
+                    <span [class]="overLimit(u) ? 'font-semibold text-rose-300' : 'text-ink-100'">{{ u.usedTodayBytes | bytes }}</span>
+                    <span class="text-ink-400"> / {{ u.role === 'ADMIN' ? 'no limit' : (u.dailyLimitBytes | allowance) }}</span>
+                  </td>
                   <td class="text-ink-300">{{ u.lastSeenAt | relative }}</td>
                   <td class="text-right">
                     @if (u.id !== me()?.id) {
@@ -101,6 +112,7 @@ export class UsersPage {
   protected readonly actionError = signal<string | null>(null);
 
   protected readonly users = rxResource({ stream: () => this.api.users() });
+  protected readonly plans = rxResource({ stream: () => this.api.plans() });
 
   protected readonly shown = computed(() => {
     const q = this.query().trim().toLowerCase();
@@ -115,14 +127,28 @@ export class UsersPage {
     return (this.users.value() ?? []).filter((u) => u.status === status).length;
   }
 
-  protected async setStatus(user: User, status: UserStatus) {
+  protected overLimit(u: AdminUser): boolean {
+    return u.role !== 'ADMIN' && u.dailyLimitBytes !== null && u.usedTodayBytes >= u.dailyLimitBytes;
+  }
+
+  protected setStatus(user: AdminUser, status: UserStatus) {
+    return this.change(user, () => this.api.setUserStatus(user.id, status));
+  }
+
+  /** Set from here, a plan has no end date; time-limited plans come from approving a request. */
+  protected setPlan(user: AdminUser, planId: string) {
+    return this.change(user, () => this.api.setUserPlan(user.id, planId));
+  }
+
+  private async change(user: AdminUser, call: () => Observable<AdminUser>) {
     this.busy.set(user.id);
     this.actionError.set(null);
     try {
-      const updated = await firstValueFrom(this.api.setUserStatus(user.id, status));
+      const updated = await firstValueFrom(call());
       this.users.update((list) => list?.map((u) => (u.id === updated.id ? updated : u)));
     } catch {
       this.actionError.set(`Could not update ${user.email}.`);
+      this.users.reload();
     } finally {
       this.busy.set(null);
     }

@@ -1,13 +1,14 @@
-import { ArrowDown, ArrowUp, Clock, Eye, Loader2, MapPin, Power, Search, ShieldAlert, ShieldCheck, Zap } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, Clock, Eye, Loader2, MapPin, Power, Search, ShieldAlert, ShieldCheck, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Flag } from "../components/Flag";
+import { UsageBar } from "../components/UsageBar";
 import { Button, EmptyState, ErrorNote, Spinner, cx } from "../components/ui";
 import { WorldMap, type MapPhase, type MapPin as Pin } from "../components/WorldMap";
 import { bytes, clock, countryName } from "../lib/format";
 import { distanceKm, resolveMyLocation, serverCoords, type MyLocation } from "../lib/geo";
 import { useAction, useNow, useResource } from "../lib/hooks";
 import { api, ipc } from "../lib/ipc";
-import type { AppView, Server, TunnelStatus } from "../lib/types";
+import type { AppView, MyPlan, Server, TunnelStatus } from "../lib/types";
 
 const ACK_KEY = "hidenseek.activityAck";
 
@@ -54,8 +55,9 @@ function useRates(status: TunnelStatus | null) {
 const packets = (rate: number) => (rate < 1024 ? 1 : rate < 100 * 1024 ? 2 : rate < 1024 * 1024 ? 3 : 4);
 const place = (city: string | null, cc: string | null) => [city, cc ? countryName(cc) : null].filter(Boolean).join(", ");
 
-export function Home({ app, onConnectedChange }: { app: AppView; onConnectedChange: (c: boolean) => void }) {
+export function Home({ app, onConnectedChange, onOpenPlan }: { app: AppView; onConnectedChange: (c: boolean) => void; onOpenPlan: () => void }) {
   const servers = useResource(() => api.get<Server[]>("/api/v1/nodes"), [], 15000);
+  const plan = useResource(() => api.get<MyPlan>("/api/v1/me/plan"), [], 30000);
   const status = useResource(() => ipc.status(), [], 2000);
   const action = useAction();
   const [phase, setPhase] = useState<MapPhase | null>(null);
@@ -168,6 +170,7 @@ export function Home({ app, onConnectedChange }: { app: AppView; onConnectedChan
               <span>This server logs the website domains you visit (via DNS). Its admin can see them. Page contents stay encrypted.</span>
             </div>
           )}
+          {plan.data && <PlanStrip plan={plan.data} onOpen={onOpenPlan} />}
           <ErrorNote error={action.error} className="mt-3" />
         </div>
 
@@ -236,6 +239,34 @@ export function Home({ app, onConnectedChange }: { app: AppView; onConnectedChan
     setSelectedId(server.id);
     if (up && server.id !== connectedId) void connect(server);
   }
+}
+
+/** Today's usage under the status card; turns red once the allowance is used up. */
+function PlanStrip({ plan, onOpen }: { plan: MyPlan; onOpen: () => void }) {
+  const { usage } = plan;
+  return (
+    <button
+      onClick={onOpen}
+      className={cx(
+        "mt-3 block w-full rounded-lg border px-3 py-2.5 text-left transition-colors",
+        usage.limited
+          ? "border-rose-500/25 bg-rose-500/[0.08] hover:bg-rose-500/[0.12]"
+          : "border-white/[0.06] bg-ink-950/40 hover:bg-white/[0.04]",
+      )}
+    >
+      <div className="mb-1.5 flex items-center justify-between text-xs">
+        <span className="font-semibold text-ink-300">{plan.plan.name} plan</span>
+        <span className="flex items-center gap-0.5 text-brand-300">
+          {usage.limited ? "Get more data" : "Details"}
+          <ChevronRight className="size-3.5" />
+        </span>
+      </div>
+      <UsageBar usage={usage} compact />
+      {usage.limited && (
+        <p className="mt-2 text-xs text-rose-200">Today's allowance is used up, so the VPN is paused until midnight.</p>
+      )}
+    </button>
+  );
 }
 
 function kmTo(me: MyLocation, server: Server) {

@@ -71,3 +71,6 @@ hidenseek:
   activity:
     # How long DNS activity records are kept before being purged.
     retention: ${ACTIVITY_RETENTION:30d}
+  plans:
+    # Daily data allowances reset at midnight here.
+    timezone: ${PLANS_TIMEZONE:Asia/Kolkata}

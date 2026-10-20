@@ -30,6 +30,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/users/user-detail').then((m) => m.UserDetailPage),
       },
       {
+        path: 'plans',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/plans/plans').then((m) => m.PlansPage),
+      },
+      {
         path: 'sessions',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/sessions/sessions').then((m) => m.SessionsPage),

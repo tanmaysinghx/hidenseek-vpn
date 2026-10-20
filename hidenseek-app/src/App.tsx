@@ -9,6 +9,7 @@ import { Pending } from "./pages/Pending";
 import { Home } from "./pages/Home";
 import { HistoryPage } from "./pages/History";
 import { Devices } from "./pages/Devices";
+import { PlanPage } from "./pages/PlanPage";
 import { SettingsPage } from "./pages/Settings";
 import { Admin } from "./pages/admin/Admin";
 
@@ -75,9 +76,10 @@ export default function App() {
     screen = (
       <Shell route={route} onNavigate={setRoute} isAdmin={isAdmin} connected={connected}>
         <div key={route} className="h-full animate-rise">
-          {route === "home" && <Home app={app} onConnectedChange={setConnected} />}
+          {route === "home" && <Home app={app} onConnectedChange={setConnected} onOpenPlan={() => setRoute("plan")} />}
           {route === "history" && <HistoryPage />}
           {route === "devices" && <Devices currentDeviceId={app.deviceId} />}
+          {route === "plan" && <PlanPage />}
           {route === "admin" && isAdmin && <Admin me={me} />}
           {route === "settings" && <SettingsPage app={app} me={me} onSignedOut={refresh} onChangeServer={changeServer} />}
         </div>

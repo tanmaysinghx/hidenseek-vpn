@@ -3,6 +3,7 @@ import { PageHeader, cx } from "../../components/ui";
 import type { User } from "../../lib/types";
 import { Overview } from "./Overview";
 import { Users } from "./Users";
+import { Plans } from "./Plans";
 import { Servers } from "./Servers";
 import { Sessions } from "./Sessions";
 import { Activity } from "./Activity";
@@ -11,6 +12,7 @@ const tabs = [
   { id: "overview", label: "Overview" },
   { id: "servers", label: "Servers" },
   { id: "users", label: "Users" },
+  { id: "plans", label: "Plans" },
   { id: "sessions", label: "Sessions" },
   { id: "activity", label: "Activity" },
 ] as const;
@@ -21,7 +23,7 @@ export function Admin({ me }: { me: User }) {
   const [tab, setTab] = useState<Tab>("overview");
   return (
     <>
-      <PageHeader title="Admin" subtitle="Manage servers, people and connection data." />
+      <PageHeader title="Admin" subtitle="Manage servers, people, plans and connection data." />
       <div className="-mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div className="inline-flex gap-1 rounded-xl bg-ink-950/60 p-1 ring-1 ring-white/5">
           {tabs.map((t) => (
@@ -42,6 +44,7 @@ export function Admin({ me }: { me: User }) {
         {tab === "overview" && <Overview onNavigate={setTab} />}
         {tab === "servers" && <Servers />}
         {tab === "users" && <Users me={me} />}
+        {tab === "plans" && <Plans />}
         {tab === "sessions" && <Sessions />}
         {tab === "activity" && <Activity />}
       </div>

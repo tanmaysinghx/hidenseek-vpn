@@ -133,3 +133,56 @@ export interface AppError {
 }
 
 export type RegisterOutcome = { outcome: "signedIn" } | { outcome: "pending"; message: string };
+
+export interface Plan {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  /** null = unlimited */
+  dailyLimitBytes: number | null;
+  priceLabel: string | null;
+  isDefault: boolean;
+}
+
+export interface Usage {
+  usedBytes: number;
+  limitBytes: number | null;
+  resetsAt: string;
+  /** Today's allowance is used up: the VPN is paused until resetsAt. */
+  limited: boolean;
+  /** Admins are never limited. */
+  exempt: boolean;
+}
+
+export type PlanRequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+
+export interface PlanRequest {
+  id: string;
+  userId: string;
+  userEmail: string | null;
+  userName: string | null;
+  plan: Plan;
+  status: PlanRequestStatus;
+  note: string | null;
+  createdAt: string;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  decisionNote: string | null;
+}
+
+export interface MyPlan {
+  plan: Plan;
+  expiresAt: string | null;
+  usage: Usage;
+  pendingRequest: PlanRequest | null;
+}
+
+/** Admin user list rows: the user plus their plan and today's usage. */
+export interface AdminUser extends User {
+  planId: string;
+  planName: string;
+  dailyLimitBytes: number | null;
+  planExpiresAt: string | null;
+  usedTodayBytes: number;
+}
