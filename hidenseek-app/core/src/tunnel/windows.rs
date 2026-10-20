@@ -80,24 +80,34 @@ async fn run(exe: &str, args: &[&str]) -> Result<String> {
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
+fn config_path(dir: &Path) -> PathBuf {
+    dir.join(format!("{INTERFACE}.conf"))
+}
+
 pub async fn up(dir: &Path, config: &str) -> Result<()> {
     ensure_wireguard(dir).await?;
-    if stats().await?.up {
-        down(dir).await?;
-    }
-    let path = dir.join(format!("{INTERFACE}.conf"));
+    down(dir).await?;
+    // The service reads this path every time it starts (including at boot), so it must stay until
+    // the tunnel is torn down. It lives in the user's profile next to state.json, which already
+    // holds the device key.
+    let path = config_path(dir);
     write_private(&path, config.as_bytes())?;
     let result = run("wireguard.exe", &["/installtunnelservice", &path.to_string_lossy()]).await;
-    // The service keeps its own encrypted copy; don't leave the private key lying around.
-    let _ = std::fs::remove_file(&path);
+    if result.is_err() {
+        let _ = std::fs::remove_file(&path);
+    }
     result.map(|_| ())
 }
 
-pub async fn down(_dir: &Path) -> Result<()> {
-    if !stats().await?.up {
-        return Ok(());
+pub async fn down(dir: &Path) -> Result<()> {
+    let uninstall = run("wireguard.exe", &["/uninstalltunnelservice", INTERFACE]).await;
+    // A service that crashed or never started reports as down but is still registered; remove it
+    // anyway, and only treat a failure as an error when the tunnel was actually running.
+    if stats().await?.up {
+        uninstall?;
     }
-    run("wireguard.exe", &["/uninstalltunnelservice", INTERFACE]).await.map(|_| ())
+    let _ = std::fs::remove_file(config_path(dir));
+    Ok(())
 }
 
 /// `wg show <iface> dump`: the second line is the peer, with handshake, rx and tx in columns 5-7.
