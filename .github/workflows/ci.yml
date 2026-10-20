@@ -229,6 +229,9 @@ jobs:
 
       - name: Build image
         uses: docker/build-push-action@v6
+        env:
+          # Don't upload the *.dockerbuild record as a workflow artifact; nothing uses it.
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           file: hidenseek-backend/Dockerfile
@@ -532,9 +535,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download build outputs
+      # Only what the release ships, so an unrelated artifact can't fail the release.
+      - name: Download app builds
         uses: actions/download-artifact@v4
         with:
+          pattern: app-*
+          path: artifacts/
+
+      - name: Download agent and backend
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "{agent-binaries,backend-jar}"
           path: artifacts/
 
       - name: Prepare release artifacts
